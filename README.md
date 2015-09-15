@@ -1,5 +1,9 @@
 ## XAVI - The XTRAC API Platform
 
+Xavi is a software layer that decouples API consumers from the systems that provide the 
+underlying capabilities of the APIs, and allows an API contract to be defined and maintained from 
+the consumer perspective, implemented as a facade in front of the services and applications providing 
+API functionality.
 
 ### Dependency management
 
@@ -103,7 +107,10 @@ localhost, 127.0.0.1, 172.20.20.1/24
 		
 #### Go Code Coverage with Gocov
 
+Gocov will accumulate coverage recursively, unlike the go test tool which produces coverage for a single
+package.
 
+gocov test ./... |gocov-html > coverage.html
 
 ### Port Usage - Mac Os X  
 
@@ -114,7 +121,7 @@ localhost, 127.0.0.1, 172.20.20.1/24
 
 We can use [Mountebank](http://www.mbtest.org/) as a service endpoint for trying out XAVI.
 
-Consider the following mountebank imposter definition (see imposter.json):
+Consider the following mountebank imposter definition (see democonfig/imposter.json):
 
 <pre>
 {
@@ -146,7 +153,7 @@ Consider the following mountebank imposter definition (see imposter.json):
 We can provide a mock /hello service by defining it using Mountebank:
 
 <pre>
-curl -i -X POST -H 'Content-Type: application/json' -d@imposter.json http://127.0.0.1:2525/imposters
+curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/imposter.json http://127.0.0.1:2525/imposters
 </pre>
 
 The service endpoint can be called via curl:
@@ -163,7 +170,7 @@ We can then set up a simple proxy example like this:
 
 <pre>
 export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/mbdemo.xavi
-curl -i -X POST -H 'Content-Type: application/json' -d@imposter.json http://127.0.0.1:2525/imposters
+curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/imposter.json http://127.0.0.1:2525/imposters
 ./xavi add-server -address localhost -port 4545 -name hello1 -ping-uri /hello
 ./xavi add-backend -name demo-backend -servers hello1
 ./xavi add-route -name demo-route -backend demo-backend -base-uri /hello
@@ -175,8 +182,8 @@ For a two server round-robin proxy config demo, try this:
 
 <pre>
 export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/mbdemo.xavi
-curl -i -X POST -H 'Content-Type: application/json' -d@hello3000.json http://127.0.0.1:2525/imposters
-curl -i -X POST -H 'Content-Type: application/json' -d@hello3100.json http://127.0.0.1:2525/imposters
+curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3000.json http://127.0.0.1:2525/imposters
+curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3100.json http://127.0.0.1:2525/imposters
 ./xavi add-server -address localhost -port 3000 -name hello1 -ping-uri /hello -health-check http-get
 ./xavi add-server -address localhost -port 3100 -name hello2 -ping-uri /hello -health-check http-get
 ./xavi add-backend -name demo-backend -servers hello1,hello2 -load-balancer-policy round-robin
@@ -189,8 +196,8 @@ For a two server prefer local proxy config, try this:
 
 <pre>
 export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/mbdemo.xavi
-curl -i -X POST -H 'Content-Type: application/json' -d@hello3000.json http://127.0.0.1:2525/imposters
-curl -i -X POST -H 'Content-Type: application/json' -d@hello13100.json http://vc2c09dal2317.***REMOVED***:2525/imposters
+curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3000.json http://127.0.0.1:2525/imposters
+curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello13100.json http://vc2c09dal2317.***REMOVED***:2525/imposters
 ./xavi add-server -address `hostname` -port 3000 -name hello1 -ping-uri /hello
 ./xavi add-server -address vc2c09dal2317.***REMOVED*** -port 13100 -name hello2 -ping-uri /hello
 ./xavi add-backend -name demo-backend -servers hello1,hello2 -load-balancer-policy prefer-local
@@ -430,104 +437,5 @@ graphitePort: 2003
 }
 </pre>
 
-### Graphite Setup
-
-<pre>
-    3  apt-get -y update
-    4  sudo apt-get -y update
-    5  apt-get -y install python-ldap python-cairo python-django python-twisted python-django-tagging python-simplejson python-memcache python-pysqlite2 python-support python-pip gunicorn supervisor nginx-light
-    6  sudo apt-get -y install python-ldap python-cairo python-django python-twisted python-django-tagging python-simplejson python-memcache python-pysqlite2 python-support python-pip gunicorn supervisor nginx-light
-    7  sudo pip install whisper
-    8  sudo pip install --install-option="--prefix=/var/lib/graphite" --install-option="--install-lib=/var/lib/graphite/lib" carbon
-    9  sudo pip install --install-option="--prefix=/var/lib/graphite" --install-option="--install-lib=/var/lib/graphite/webapp" graphite-web
-   11  sudo apt-get install -y git
-   12  git clone https://github.com/nickstenning/docker-graphite
-   15  sudo cp docker-graphite/nginx.conf /etc/nginx/nginx.conf
-   16  sudo cp docker-graphite/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-   20  cd docker-graphite/
-   22  cp ./initial_data.json /var/lib/graphite/webapp/graphite/initial_data.json
-   23  sudo cp ./initial_data.json /var/lib/graphite/webapp/graphite/initial_data.json
-   24  sudo cp ./local_settings.py /var/lib/graphite/webapp/graphite/local_settings.py
-   25  sudo cp ./carbon.conf /var/lib/graphite/conf/carbon.conf
-   26  sudo cp ./storage-schemas.conf /var/lib/graphite/conf/storage-schemas.conf
-   27  sudo mkdir -p /var/lib/graphite/storage/whisper
-   28  sudo touch /var/lib/graphite/storage/graphite.db /var/lib/graphite/storage/index
-   29  sudo chown -R www-data /var/lib/graphite/storage
-   30  sudo chmod 0775 /var/lib/graphite/storage /var/lib/graphite/storage/whisper
-   31  sudo chmod 0664 /var/lib/graphite/storage/graphite.db
-   35  cd /var/lib/graphite/webapp/graphite
-   37  sudo python manage.py syncdb --noinput
-   39  sudo /usr/bin/supervisord
-</pre>
-
-/var/lib/graphite/conf/storage-schemas.conf
-
-<pre>
-[stats]
-pattern = ^stats.*
-retentions = 10s:6h,1min:6d,10min:1800d
-
-[carbon]
-pattern = ^carbon\..*
-retentions = 1m:31d,10m:1y,1h:5y
-
-[default]
-pattern = .*
-retentions = 10s:8d,1m:31d,10m:1y,1h:5y
-</pre>
-
-/var/lib/graphite/conf/storage-aggregation.conf
-
-<pre>
-[min]
-pattern = \.lower$
-xFilesFactor = 0.1
-aggregationMethod = min
-
-[max]
-pattern = \.upper(_\d+)?$
-xFilesFactor = 0.1
-aggregationMethod = max
-
-[sum]
-pattern = \.sum$
-xFilesFactor = 0
-aggregationMethod = sum
-
-[count]
-pattern = \.count$
-xFilesFactor = 0
-aggregationMethod = sum
-
-[count_legacy]
-pattern = ^stats_counts.*
-xFilesFactor = 0
-aggregationMethod = sum
-
-[default_average]
-pattern = .*
-xFilesFactor = 0.3
-aggregationMethod = average
-</pre>
 
 
-### First Crack at Plugins
-
-Need more info here, idea is we are applying the pipe and filters pattern on the request prior
-to backend service invocation, and on the response prior to writing the response.
-
-<img src="./Pipes-and-Filters.png" width="100%" height="100%"/>
-
-
-#### Current Approach - wrapping HTTP handlers using the http test recorder
-to buffer output that needs transformation.
-
-
-### URLs
-
-Running local xavi with vagrant box services
-
-        Expvars - http://localhost:8080/debug/vars
-        Grafite - http://172.20.20.70/
-        Consul - http://172.20.20.70:8500/ui/
-        Kibana - http://172.20.20.70:8000/
