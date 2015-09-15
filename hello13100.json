@@ -1,0 +1,24 @@
+{
+  "port": 13100,
+  "protocol": "http",
+  "stubs": [
+    {
+      "responses": [
+        {
+          "is": {
+            "statusCode": 200,
+            "body": "All work and no play makes Jack a dull boy.\nAll work and no play makes Jack a dull boy.\nAll work and no play makes Jack a dull boy.\nAll work and no play makes Jack a dull boy.\n"
+          }
+        }
+      ],
+      "predicates": [
+        {
+          "equals": {
+            "path": "/hello",
+            "method": "GET"
+          }
+        }
+      ]
+    }
+  ]
+}

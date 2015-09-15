@@ -1,0 +1,6 @@
+servers/hello1#{"Name":"hello1","Address":"localhost","Port":3000,"PingURI":"/hello"}
+servers/hello2#{"Name":"hello2","Address":"localhost","Port":3100,"PingURI":"/hello"}
+backends/demo-backend#{"Name":"demo-backend","ServerNames":["hello1","hello2"]}
+routes/demo-route#{"Name":"demo-route","URIRoot":"/hello","Backend":"demo-backend","Filters":["Logging"],"MsgProps":"SOAPAction=\"Hello\""}
+routes/demo-route2#{"Name":"demo-route2","URIRoot":"/hello","Backend":"demo-backend","Filters":["Logging"],"MsgProps":"SOAPAction=\"Hello2\""}
+listeners/demo-listener#{"Name":"demo-listener","RouteNames":["demo-route","demo-route2"]}
