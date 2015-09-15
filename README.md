@@ -278,12 +278,17 @@ env XT_CLEANUP_CONTAINERS=false gucumber
 
 ### Codeship Setup - Copy to S3 Bucket
 
-Test setup: nothing
+Note for simple CI on commit there's no need to do an S3 deploy
+
+Test setup:
+
+<pre>
+go get github.com/tools/godep
+</pre>
 
 Test commands
 
 <pre>
-go get github.com/tools/godep
 godep go test ./...
 </pre>
 
