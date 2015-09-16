@@ -266,7 +266,7 @@ Build the Mountebank server image in the docker/mountebank-alpine directory:
 <pre>
 docker build -t "mb-server-alpine" .
 docker run -d -p 2626:2525 --name mountebank --label 'xt-container-type=atest-mb' mb-server-alpine
-<pre>
+</pre>
 
 #### XAVI Docker set up
 
