@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const testRemoteServerAddress = "server2.***REMOVED***"
+const testRemoteServerAddress = "server2.domain.com"
 const testPort = 11000
 
 func joinHostAndPort(host string, port int) string {
@@ -22,7 +22,7 @@ func TestSplitHostFromAddress(t *testing.T) {
 	host = splitHostFromAddress("foo")
 	assert.Equal(t, "foo", host)
 
-	host = splitHostFromAddress("foo.***REMOVED***")
+	host = splitHostFromAddress("foo.domain.com")
 	assert.Equal(t, "foo", host)
 }
 
@@ -56,9 +56,9 @@ func TestIsLocal(t *testing.T) {
 func TestSameServer(t *testing.T) {
 	assert.True(t, sameServer("snoopd.local", "snoopd.local"))
 	assert.False(t, sameServer("foobar", "foobarbaz"))
-	assert.True(t, sameServer("x", "x.***REMOVED***"))
-	assert.True(t, sameServer("x.***REMOVED***", "x"))
-	assert.False(t, sameServer("x.foo.com", "x.bar.com"))
+	assert.True(t, sameServer("x", "x.domain.com"))
+	assert.True(t, sameServer("x.domain.com", "x"))
+	assert.False(t, sameServer("x.domain.com", "x.bar.com"))
 }
 
 func makeTestLocalAndRemoteServers() []config.ServerConfig {
@@ -79,7 +79,7 @@ func makeTestLocalAndRemoteServers() []config.ServerConfig {
 
 	serverConfig2 := config.ServerConfig{
 		Name:                "server2",
-		Address:             "server2.***REMOVED***",
+		Address:             "server2.domain.com",
 		Port:                testPort,
 		PingURI:             "/xtracrulesok",
 		HealthCheck:         "none",
@@ -104,7 +104,7 @@ func makeTestLocalhostAndRemoteServers() []config.ServerConfig {
 
 	serverConfig2 := config.ServerConfig{
 		Name:                "server2",
-		Address:             "server2.***REMOVED***",
+		Address:             "server2.domain.com",
 		Port:                testPort,
 		PingURI:             "/xtracrulesok",
 		HealthCheck:         "none",
@@ -119,7 +119,7 @@ func makeTestRemoteServer() []config.ServerConfig {
 
 	serverConfig2 := config.ServerConfig{
 		Name:                "server2",
-		Address:             "server2.***REMOVED***",
+		Address:             "server2.domain.com",
 		Port:                testPort,
 		PingURI:             "/xtracrulesok",
 		HealthCheck:         "none",

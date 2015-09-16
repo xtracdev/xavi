@@ -16,7 +16,7 @@ func TestNilServersSlice(t *testing.T) {
 func TestEmptyBackendName(t *testing.T) {
 	serverConfig := config.ServerConfig{
 		Name:    "server1",
-		Address: "server1.***REMOVED***",
+		Address: "server1.domain.com",
 		Port:    11000,
 		PingURI: "/xtracrulesok",
 	}
@@ -38,7 +38,7 @@ func TestEmptyServersSlice(t *testing.T) {
 func TestSingleServerConfig(t *testing.T) {
 	serverConfig := config.ServerConfig{
 		Name:    "server1",
-		Address: "server1.***REMOVED***",
+		Address: "server1.domain.com",
 		Port:    11000,
 		PingURI: "/xtracrulesok",
 	}
@@ -60,14 +60,14 @@ func TestSingleServerConfig(t *testing.T) {
 func TestMultiServerConfig(t *testing.T) {
 	serverConfig := config.ServerConfig{
 		Name:    "server1",
-		Address: "server1.***REMOVED***",
+		Address: "server1.domain.com",
 		Port:    11000,
 		PingURI: "/xtracrulesok",
 	}
 
 	serverConfig2 := config.ServerConfig{
 		Name:    "server2",
-		Address: "server2.***REMOVED***",
+		Address: "server2.domain.com",
 		Port:    11000,
 		PingURI: "/xtracrulesok",
 	}
@@ -93,7 +93,7 @@ func TestMultiServerConfig(t *testing.T) {
 func TestMarkEndpointDown(t *testing.T) {
 	serverConfig := config.ServerConfig{
 		Name:    "server1",
-		Address: "server1.***REMOVED***",
+		Address: "server1.domain.com",
 		Port:    11000,
 		PingURI: "/xtracrulesok",
 	}
@@ -114,13 +114,13 @@ func TestMarkEndpointDown(t *testing.T) {
 	err = rr.MarkEndpointDown("notmyserver:123")
 	assert.NotNil(t, err)
 
-	err = rr.MarkEndpointDown("server1.***REMOVED***:11000")
+	err = rr.MarkEndpointDown("server1.domain.com:11000")
 	assert.Nil(t, err)
 
 	_, err = rr.GetConnectAddress()
 	assert.NotNil(t, err)
 
-	err = rr.MarkEndpointUp("server1.***REMOVED***:11000")
+	err = rr.MarkEndpointUp("server1.domain.com:11000")
 	assert.Nil(t, err)
 
 	_, err = rr.GetConnectAddress()

@@ -71,7 +71,7 @@ variable should be `consul://host:port` and for a the hashmap/file store specify
 file. Note that file URLs are full paths to files, e.g.
 
 <pre>
-export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/democfg.xavi
+export XAVI_KVSTORE_URL=file:////some/path/democfg.xavi
 </pre>
 
 
@@ -93,19 +93,6 @@ TL;DR
 GOOS=linux GOARCH=386 CGO_ENABLED=0 godep go build
 </pre>
 
-### Consul UI
-
-When running the xavi-docker box, the consul UI is available at http://172.20.20.70:8500/ui/
-
-Note that safari and chrome have trouble accessing this URL as they want to go through the corporate proxy. To
-avoid this problem, use Firefox.
-
-To grant access to all virtual boxes that are run with address 172.20.20.XXX, open the Firefox preferences, click
-Network under Advanced, click Settings, and add 172.20.20.1/24 to the list of items in No Proxy for, e.g.
-
-<pre>
-localhost, 127.0.0.1, 172.20.20.1/24
-</pre>
 
 
 ### Go Code Coverage
@@ -166,7 +153,7 @@ curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/imposter.json 
 The service endpoint can be called via curl:
 
 <pre>
-MACLB015803:xavi ***REMOVED***$ curl localhost:4545/hello
+curl localhost:4545/hello
 All work and no play makes Jack a dull boy.
 All work and no play makes Jack a dull boy.
 All work and no play makes Jack a dull boy.
@@ -176,7 +163,7 @@ All work and no play makes Jack a dull boy.
 We can then set up a simple proxy example like this:
 
 <pre>
-export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/mbdemo.xavi
+export XAVI_KVSTORE_URL=file:////some/path/mbdemo.xavi
 curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/imposter.json http://127.0.0.1:2525/imposters
 ./xavi add-server -address localhost -port 4545 -name hello1 -ping-uri /hello
 ./xavi add-backend -name demo-backend -servers hello1
@@ -190,7 +177,7 @@ After the listener is started, the proxy endpoint can be used, e.g. `curl localh
 For a two server round-robin proxy config demo, try this:
 
 <pre>
-export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/mbdemo.xavi
+export XAVI_KVSTORE_URL=file:////some/path/mbdemo.xavi
 curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3000.json http://127.0.0.1:2525/imposters
 curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3100.json http://127.0.0.1:2525/imposters
 ./xavi add-server -address localhost -port 3000 -name hello1 -ping-uri /hello -health-check http-get
@@ -201,19 +188,6 @@ curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3100.json
 ./xavi listen -ln demo-listener -address 0.0.0.0:8080
 </pre>
 
-For a two server prefer local proxy config, try this:
-
-<pre>
-export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/xtracdev/xavi/mbdemo.xavi
-curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello3000.json http://127.0.0.1:2525/imposters
-curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello13100.json http://vc2c09dal2317.***REMOVED***:2525/imposters
-./xavi add-server -address `hostname` -port 3000 -name hello1 -ping-uri /hello
-./xavi add-server -address vc2c09dal2317.***REMOVED*** -port 13100 -name hello2 -ping-uri /hello
-./xavi add-backend -name demo-backend -servers hello1,hello2 -load-balancer-policy prefer-local
-./xavi add-route -name demo-route -backend demo-backend -base-uri /hello
-./xavi add-listener -name demo-listener -routes demo-route
-./xavi listen -ln demo-listener -address 0.0.0.0:8080
-</pre>
 
 Curling the endpoint as in the single server instance, the mountebank log shows the requests
 being distributed to the two endpoints.
@@ -240,6 +214,8 @@ to update the docker daemon proxy settings in the docker VM. To do so:
 (export HTTP_PROXY=http://<proxy host>:<proxy port>, export HTTPS_PROXY=http://<proxy host>:<proxy port>
 placed on separate lines).
 3. Restart the VM. You can use the Virtual Box client to do this.
+4. You will also need to edit the Dockerfiles mentioned below to uncomment out the proxy ENV
+lines, and add your proxy server IP address and port.
 
 The tests are written assuming the following port configuration:
 
