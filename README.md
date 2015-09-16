@@ -57,24 +57,7 @@ export XAVI_KVSTORE_URL=file:////Users/***REMOVED***/goprojects/src/github.com/x
 [Logrus](https://github.com/Sirupsen/logrus) is currently the logging framework. The log level can be set
 via the XAVI_LOGGING_LEVEL environment variable (valid values are debug, info, warn, fatal, error, panic).
 
-### Vagrant Image
 
-A vagrant box for the Virtualbox provider is available to team members via the Hashicorp Atlas
-repository. Downloading and booting the box provides standard environment components, such as
-docker, consul, graphite, statsd, elastisearch, logstash, kibana, fluentd, etc.
-
-The details on how the box was created are available in the [xavi-docker](https://github.com/xtracdev/xavi-docker)
-project.
-
-When running xavi locally using services running in the Vagrant box, set environment variables
-as needed. Current the consul and statsd directories must be set:
-
-<pre>
-export XAVI_CONSUL_AGENT_IP=172.20.20.70
-export XAVI_STATSD_ADDRESS=172.20.20.70:8125
-</pre>
-
-A pre-built box (private image) is available via Hashicorp Atlas to team members.
 
 ### Cross-compiling
 
@@ -178,6 +161,8 @@ curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/imposter.json 
 ./xavi listen -ln demo-listener -address 0.0.0.0:8080
 </pre>
 
+After the listener is started, the proxy endpoint can be used, e.g. `curl localhost:8080/hello`
+
 For a two server round-robin proxy config demo, try this:
 
 <pre>
@@ -206,39 +191,42 @@ curl -i -X POST -H 'Content-Type: application/json' -d@democonfig/hello13100.jso
 ./xavi listen -ln demo-listener -address 0.0.0.0:8080
 </pre>
 
-
-### Demo Service Proxy Example Setup
+Curling the endpoint as in the single server instance, the mountebank log shows the requests
+being distributed to the two endpoints.
 
 <pre>
-./xavi add-server -address localhost -port 3000 -name hello1 -ping-uri /hello
-./xavi add-server -address localhost -port 3100 -name hello2 -ping-uri /hello
-./xavi add-backend -name demo-backend -servers hello1,hello2
-./xavi add-route -name demo-route -backend demo-backend -base-uri /hello
-./xavi add-listener -name demo-listener -routes demo-route
-
-
-demosvc -port 3000&
-demosvc -port 3100&
-
-./xavi listen -ln demo-listener -address 0.0.0.0:8080
-
-xavi add-route -name demo-route -backend demo-backend -base-uri /hello -filters logging
-
-curl -v 172.20.20.10:8500/v1/kv/?recurse
+info: [http:3000] ::ffff:127.0.0.1:50568 => GET /hello
+info: [http:3100] ::ffff:127.0.0.1:50571 => GET /hello
+info: [http:3000] ::ffff:127.0.0.1:50573 => GET /hello
+info: [http:3100] ::ffff:127.0.0.1:50575 => GET /hello
 </pre>
 
 
-### Acceptance Testing Setup with Boot2docker
 
-Port forward between the host and the boot2docker guest os
+### Acceptance Testing Setup with Docker-Machine
+
+Assuming you are working on a mac, you'll need to install the docker tools and docker machine
+to run docker, which is needed for running the Xavi acceptance tests.
+
+If you are attached to a network that uses an http proxy to connect to the internet, you'll need
+to update the docker daemon proxy settings in the docker VM. To do so:
+
+1. Connect to the default machine via `docker-machine -D ssh default`
+2. `sudo vi /var/lib/boot2docker/profile ` and export proxy setting environment variables
+(export HTTP_PROXY=http://<proxy host>:<proxy port>, export HTTPS_PROXY=http://<proxy host>:<proxy port>
+placed on separate lines).
+3. Restart the VM. You can use the Virtual Box client to do this.
+
+The tests are written assuming the following port configuration:
+
 <pre>
-VBoxManage controlvm boot2docker-vm natpf1 "standalone-mb,tcp,127.0.0.1,3636,,2626"
-VBoxManage controlvm boot2docker-vm natpf1 "cohosted-mb,tcp,127.0.0.1,3535,,2525"
-VBoxManage controlvm boot2docker-vm natpf1 "xavi-rest-agent,tcp,127.0.0.1,8080,,8080"
-VBoxManage controlvm boot2docker-vm natpf1 "xavi-test-server,tcp,127.0.0.1,9000,,9000"
+VBoxManage controlvm default natpf1 "standalone-mb,tcp,127.0.0.1,3636,,2626"
+VBoxManage controlvm default natpf1 "cohosted-mb,tcp,127.0.0.1,3535,,2525"
+VBoxManage controlvm default natpf1 "xavi-rest-agent,tcp,127.0.0.1,8080,,8080"
+VBoxManage controlvm default natpf1 "xavi-test-server,tcp,127.0.0.1,9000,,9000"
 </pre>
 
-Mountebank docker set up - in docker/mountebank-alpine
+#### Mountebank
 
 Note the above port forwarding - it maps the host os perspective to the guest os
 perspective, with docker port forwarding managing the mapping of the guest os to the
@@ -249,14 +237,19 @@ check to see if the container is running. If the container is not running, the a
 create and start it using the docker API. The commands below are provided as documentation of what the
 acceptance test code does to run the containers.
 
+Build the Mountebank server image in the docker/mountebank-alpine directory:
+
 <pre>
 docker build -t "mb-server-alpine" .
 docker run -d -p 2626:2525 --name mountebank --label 'xt-container-type=atest-mb' mb-server-alpine
 <pre>
 
-XAVI Docker set up - in docker/xavi
+#### XAVI Docker set up
 
-Note that you must first cross-compile xavi for linux and copy it into docker/xavi-alpine before building the image
+Note that you must first cross-compile xavi for linux and copy it into docker/xavi-alpine 
+before building the image, e.g. `GOOS=linux GOARCH=386 CGO_ENABLED=0 godep go build`
+
+Build the image in the docker/xavi-alpine directory
 
 <pre>
 docker build -t "xavi-test-alpine-base" .
@@ -269,178 +262,12 @@ a known state, as opposed to containers in indeterminate states, for example if 
 test configuration that can't be cleaned up, etc.
 
 For the purpose of quickly running tests that are meant to test the introduction of breaking changes, the containers
-can be left running if gucumer is executued with the environment variable XT_CLEANUP_CONTAINERS=false, e.g.
+can be left running if gucumber is executued with the environment variable XT_CLEANUP_CONTAINERS=false, e.g.
 
 <pre>
 env XT_CLEANUP_CONTAINERS=false gucumber
 </pre>
 
-
-### Codeship Setup - Copy to S3 Bucket
-
-Note for simple CI on commit there's no need to do an S3 deploy
-
-Test setup:
-
-<pre>
-go get github.com/tools/godep
-</pre>
-
-Test commands
-
-<pre>
-godep go test ./...
-</pre>
-
-1st deploy
-* Custom Script
-
-		godep go build
-
-2nd deploy
-* Amazon S3
-
-		access key id, secret access key
-		region - us-west-1
-		localpath - xavi (go build artifact)
-		s3 bucket - ds-codeship
-		acl - bucket-owner-full-control
-
-
-### Register Service - Consul
-
-/v1/agent/service/register
-<pre>
-{
-  "ID": "demo-service-1",
-  "Name": "demo-service",
-  "Tags": [
-    "demosvc",
-    "v1"
-  ],
-  "Address": "172.20.20.70",
-  "Port": 3000
-}
-</pre>
-
-<pre>
-{
-  "ID": "demo-service-2",
-  "Name": "demo-service",
-  "Tags": [
-    "demosvc",
-    "v1"
-  ],
-  "Address": "172.20.20.70",
-  "Port": 3100
-}
-</pre>
-
-
-
-
-### Register Health Check for Service
-
-/v1/agent/check/register
-<pre>
-{
-  "ID": "demo-service-check-1",
-  "service_id": "demo-service-1",
-  "service-name":"demo-service",
-  "Name": "hello",
-  "Notes": "Get /hello",
-  "HTTP": "http://172.20.20.70:3000/hello",
-  "Interval": "10s"
-}
-</pre>
-
-<pre>
-{
-  "ID": "demo-service-check-2",
-  "service_id": "demo-service-2",
-  "service-name":"demo-service",
-  "Name": "hello",
-  "Notes": "Get /hello",
-  "HTTP": "http://172.20.20.70:3100/hello",
-  "Interval": "10s"
-}
-</pre>
-
-### Registered Service DNS query
-
-    dig @172.20.20.70 -p 8600 demo-service.service.consul SRV
-    dig @172.20.20.70 -p 8600 v1.demo-service.service.consul SRV
-
-### Deregister Health Check
-
-	curl http://172.20.20.70:8500/v1/agent/check/deregister/demo-service-check
-
-### Deregister service
-
-	curl http://172.20.20.70:8500/v1/agent/service/deregister/demo-service
-
-
-
-
-### Expvar URI on listener host:port
-
-		/debug/vars
-
-### Log Rotation
-
-In /etc/logrotate.d, sudo vi xavi-demo-svc.log:
-
-		/home/vagrant/xavi-logs/demo.log {
-			missingok
-			copytruncate
-			size 50k
-			create 755 vagrant vagrant
-			su vagrant vagrant
-			rotate 20
-		}
-
-Then add an entry in /etc/crontab (sudo vi /etc/crontab)
-
-		30 *	* * * 	root	/usr/sbin/logrotate /etc/logrotate.d/xavi-demo-svc.log
-
-Or, alternatively create a script in /etc/cron.hourly (make sure to chmod +x the script)
-
-		#!/bin/sh
-		/usr/sbin/logrotate /etc/logrotate.d/xavi-demo-svc.log
-
-logrotate is fussy about the permissions. I created a umask of 022 in the .vagrant .bashrc
-
-
-The above assumes writing the stdout to a logfile named xavi-demo-svc.log
-
-		xavi listen -ln demo-listener -address 0.0.0.0:11223 >> xavi-logs/demo.log
-
-Note if you don't 'append' via >> you will not see the file size diminish
-on truncation (it will have null bytes prepended to the up to the last write offset).
-
-### Statsd Setup - Ubuntu
-
-		apt-get install nodejs npm  
-		sudo apt-get install nodejs npm  
-		sudo apt-get install git
-		git clone https://github.com/etsy/statsd/
-		cd statsd/
-		cp exampleConfig.js config.js
-		vi config.js
-		nodejs stats.js ./config.js
-
-config.js contents:
-
-<pre>
-{
-graphitePort: 2003
-, graphiteHost: "172.20.20.50"
-,port: 8125
-, backends: [ "./backends/console","./backends/graphite" ]
-, debug: true
-, dumpMessages: true
-}
-</pre>
 
 
 

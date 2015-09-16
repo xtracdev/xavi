@@ -6,8 +6,11 @@
       "responses": [
         {
           "is": {
-            "statusCode": 400,
+            "statusCode": 200,
             "body": "All work and no play makes Jack a dull boy.\nAll work and no play makes Jack a dull boy.\nAll work and no play makes Jack a dull boy.\nAll work and no play makes Jack a dull boy.\n"
+          },
+          "_behaviors" : {
+            "decorate": "function(req,resp) { var pad = function(n){ var x =''; for(var i = 0; i < n; i++) { x = x + 'X';} return x;}; resp.body = pad(100000);}"
           }
         }
       ],
