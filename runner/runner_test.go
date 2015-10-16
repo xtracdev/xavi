@@ -2,8 +2,8 @@ package runner
 
 import (
 	"fmt"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	log "github.com/Sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/env"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/logging"

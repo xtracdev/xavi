@@ -31,7 +31,8 @@ Licensed under the Apache License, Version 2.0
 
 ### Dependency management
 
-Dependencies are managed via [Godep](https://github.com/tools/godep) Refer to the documentation for how
+Dependencies are managed via [Godep](https://github.com/tools/godep) using golang 1.5 vendoring support.
+Refer to the documentation for how
 to manage dependencies, how to preface go commands with godep to pick up stored dependencies, etc.
 
 [This article](http://www.goinggo.net/2013/10/manage-dependencies-with-godep.html) provides a nice overview.
@@ -40,17 +41,11 @@ Use godep to build, clean, and test, e.g.
 
 <pre>
 godep go build
-godep go test ./...
+godep go test $(go list ./... | grep -v /vendor/)
 godep go clean
 </pre>
 
-To facilitate measuring overall code coverage with gocov, we rewrite the dependencies via godep save -r ./... - note
-that the gucumber imports in the internal directy must be reverted to github.com/lsegal/gucumber - if the rewritten
-imports are present gucumber panics.
-
-Note that while godep supports 1.5 vendoring, it doesn't recurse to vendor in
-the dependencies of the vendored code, so as it currently stands this project
-will not build using the 1.5 experimental versioning support.
+Note how ./... can't be used as normal due to it recursing into the vendor directory.
 
 #### Crypto Package
 
@@ -108,7 +103,7 @@ GOOS=linux GOARCH=386 CGO_ENABLED=0 godep go build
 Gocov will accumulate coverage recursively, unlike the go test tool which produces coverage for a single
 package.
 
-gocov test ./... |gocov-html > coverage.html
+gocov test $(go list ./... | grep -v /vendor/) |gocov-html > coverage.html
 
 ### Port Usage - Mac Os X  
 

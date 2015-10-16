@@ -25,7 +25,7 @@ To catch info messages in the log, you need to edit the /etc/asl.conf file:
 package main
 
 import (
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/env"
 	"github.com/xtracdev/xavi/logging"
 	"net"

@@ -2,10 +2,10 @@ package testsupport
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	. "github.com/lsegal/gucumber"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/samalba/dockerclient"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	"github.com/samalba/dockerclient"
+	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/internal/testsupport/testcontainer"
 	"io/ioutil"
 	"net/http"

@@ -3,7 +3,7 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/mitchellh/cli"
+	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"strings"

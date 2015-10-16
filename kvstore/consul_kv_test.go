@@ -1,9 +1,9 @@
 package kvstore
 
 import (
-	consulapi "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/hashicorp/consul/api"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/hashicorp/consul/testutil"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	consulapi "github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/testutil"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 

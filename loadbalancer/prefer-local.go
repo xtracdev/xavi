@@ -2,7 +2,7 @@ package loadbalancer
 
 import (
 	"fmt"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
 	"os"
 	"strings"

@@ -2,8 +2,8 @@ package kvstore
 
 import (
 	"fmt"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	consulapi "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/hashicorp/consul/api"
+	log "github.com/Sirupsen/logrus"
+	consulapi "github.com/hashicorp/consul/api"
 	"net/url"
 )
 

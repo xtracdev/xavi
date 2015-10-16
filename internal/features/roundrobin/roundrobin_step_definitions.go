@@ -1,9 +1,9 @@
 package roundrobin
 
 import (
+	log "github.com/Sirupsen/logrus"
 	. "github.com/lsegal/gucumber"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/internal/testsupport"
 )
 

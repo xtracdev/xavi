@@ -2,7 +2,7 @@ package agent
 
 import (
 	"fmt"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"net"
 	"net/http"
 	"strconv"

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/logging"
 	"github.com/xtracdev/xavi/runner"

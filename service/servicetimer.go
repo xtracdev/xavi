@@ -3,7 +3,7 @@ package service
 import (
 	"crypto/rand"
 	"encoding/hex"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"time"
 )

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/env"
 	"github.com/xtracdev/xavi/plugin"
 	"os"

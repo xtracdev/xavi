@@ -3,7 +3,7 @@ package commands
 import (
 	"strings"
 
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/mitchellh/cli"
+	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/plugin"
 )

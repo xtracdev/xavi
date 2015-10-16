@@ -4,7 +4,7 @@ package logging
 
 import (
 	"fmt"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"net"
 	"os"
 	"strconv"

@@ -2,7 +2,7 @@ package shell
 
 import (
 	"fmt"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/mitchellh/cli"
+	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/commands"
 	"github.com/xtracdev/xavi/kvstore"
 	"io"

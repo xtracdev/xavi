@@ -2,7 +2,7 @@ package shell
 
 import (
 	"bytes"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/kvstore"
 	"strings"
 	"testing"

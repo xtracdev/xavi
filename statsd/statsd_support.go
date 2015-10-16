@@ -2,8 +2,8 @@ package statsd
 
 import (
 	"bytes"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	statsdlib "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/quipo/statsd"
+	log "github.com/Sirupsen/logrus"
+	statsdlib "github.com/quipo/statsd"
 	"github.com/xtracdev/xavi/env"
 	"os"
 	"strings"

@@ -3,7 +3,7 @@ package commands
 import (
 	"flag"
 	"fmt"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/mitchellh/cli"
+	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/commands/agent"
 	"github.com/xtracdev/xavi/kvstore"
 	"os"

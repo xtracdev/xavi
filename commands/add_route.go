@@ -2,8 +2,8 @@ package commands
 
 import (
 	"flag"
-	log "github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/mitchellh/cli"
+	log "github.com/Sirupsen/logrus"
+	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/plugin"

@@ -2,7 +2,7 @@ package commands
 
 import (
 	"flag"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/mitchellh/cli"
+	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"strings"

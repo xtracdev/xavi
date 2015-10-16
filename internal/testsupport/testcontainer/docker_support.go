@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/xtracdev/xavi/Godeps/_workspace/src/github.com/samalba/dockerclient"
+	"github.com/samalba/dockerclient"
 	"io/ioutil"
 	"log"
 	"os"
