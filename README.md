@@ -59,6 +59,28 @@ fails, complaining about the crypto ssh terminal import path, e.g.
 godep: unrecognized import path "golang.org/x/crypto/ssh/terminal"
 </pre>
 
+### Codeship Build Setup
+
+Setup Commands
+
+<pre>
+cd $HOME
+wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
+tar xvzf go1.5.1.linux-amd64.tar.gz
+export GOROOT=$HOME/go
+export PATH=$GOROOT/bin:$PATH
+go get github.com/tools/godep
+export GO15VENDOREXPERIMENT=1
+go version
+cd $GOPATH/src/github.com/xtracdev/xavi
+</pre>
+
+Test Commands
+
+<pre>
+godep go test $(go list ./... | grep -v /vendor/)
+</pre>
+
 
 ### KVStore
 
