@@ -48,6 +48,10 @@ To facilitate measuring overall code coverage with gocov, we rewrite the depende
 that the gucumber imports in the internal directy must be reverted to github.com/lsegal/gucumber - if the rewritten
 imports are present gucumber panics.
 
+Note that while godep supports 1.5 vendoring, it doesn't recurse to vendor in
+the dependencies of the vendored code, so as it currently stands this project
+will not build using the 1.5 experimental versioning support.
+
 #### Crypto Package
 
 The cryto package has now been vendored via Godeps. The proper path for go get
