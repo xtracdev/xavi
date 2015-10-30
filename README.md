@@ -1,5 +1,8 @@
 ## XAVI - The XTRAC API Platform
 
+[![Codeship Status for xtracdev/xavi](https://codeship.com/projects/fa2d0050-3e24-0133-f8eb-5a0949beaeb8/status?branch=master)](https://codeship.com/projects/102711)
+
+
 Xavi is a software layer that decouples API consumers from the systems that provide the 
 underlying capabilities of the APIs, and allows an API contract to be defined and maintained from 
 the consumer perspective, implemented as a facade in front of the services and applications providing 
