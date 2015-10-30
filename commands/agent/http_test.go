@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func handleFoo(rw http.ResponseWriter, req *http.Request) {
