@@ -20,15 +20,31 @@ func handleBar(rw http.ResponseWriter, req *http.Request) {
 }
 
 func findFreePort() int {
-	l, _ := net.Listen("tcp", "localhost:0")
-	defer l.Close()
-	_, port, _ := net.SplitHostPort(l.Addr().String())
-	portInt, _ := strconv.Atoi(port)
-	return portInt
+	var count = 10
+	for ;; {
+		count = count - 1
+		if count == 0 {
+			return -1
+		}
+
+		l, err := net.Listen("tcp", "localhost:0")
+		if err == nil {
+			defer l.Close()
+			_, port, _ := net.SplitHostPort(l.Addr().String())
+			portInt, _ := strconv.Atoi(port)
+			return portInt
+		}
+	}
+
 }
 
 func TestUriHandling(t *testing.T) {
 	freePort := findFreePort()
+	if freePort == -1 {
+		t.Skip("No open ports to test uri handling")
+		return
+	}
+
 	baseAddr := fmt.Sprintf("localhost:%d", freePort)
 	a := NewAgent(baseAddr, nil)
 	a.addHandler("/foo", handleFoo)
