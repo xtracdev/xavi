@@ -44,7 +44,7 @@ func init() {
 		prefLocalServer1 = `{"Address":"localhost","Port":3001,"PingURI":"/hello"}`
 		prefLocalServer2 = `{"Address":"mbhost","Port":3001,"PingURI":"/hello"}`
 		backend          = `{"ServerNames":["local-hello","remote-hello"],"LoadBalancerPolicy":"prefer-local"}`
-		route            = `{"URIRoot":"/hello2","Backend":"pref-local-backend","Filters":null,"MsgProps":""}`
+		route            = `{"URIRoot":"/hello2","Backend":"pref-local-backend","Plugins":null,"MsgProps":""}`
 		listener         = `{"RouteNames":["pref-local-route"]}`
 	)
 

@@ -49,7 +49,7 @@ type managedService struct {
 type requestHandler struct {
 	Transport   *http.Transport
 	Backend     *backend
-	FilterChain *list.List
+	PluginChain *list.List
 }
 
 //Increment service counter

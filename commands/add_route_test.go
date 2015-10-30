@@ -60,11 +60,11 @@ func TestAddRouteMissingName(t *testing.T) {
 	assert.Equal(t, 1, status)
 }
 
-func TestAddRouteUnregisteredFilters(t *testing.T) {
+func TestAddRouteUnregisteredPlugins(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\"", "-filters", "crapFilter"}
+	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\"", "-plugins", "crapPlugin"}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }

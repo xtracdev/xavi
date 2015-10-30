@@ -11,9 +11,7 @@ func init() {
 	registeredWrapperFactories = make(map[string]WrapperFactory)
 }
 
-//TODO - unify terminology
-
-//ListPlugins lists the plugins/filters/wrappers currently registered with
+//ListPlugins lists the plugins currently registered with
 //the package.
 func ListPlugins() []string {
 	var plugins []string
@@ -24,7 +22,7 @@ func ListPlugins() []string {
 }
 
 //RegistryContains is a predicate that indicates if the named
-//plugin/filter/wrapper is registered with this package
+//plugin is registered with this package
 func RegistryContains(name string) bool {
 	_, ok := registeredWrapperFactories[name]
 	return ok

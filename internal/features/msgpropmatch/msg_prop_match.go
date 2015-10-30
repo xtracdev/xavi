@@ -24,8 +24,8 @@ func init() {
 		backend1 = `{"Name":"demo-backend-1","ServerNames":["hello1"],"LoadBalancerPolicy":""}`
 		backend2 = `{"Name":"demo-backend-2","ServerNames":["hello2"],"LoadBalancerPolicy":""}`
 
-		route1 = `{"Name":"demo-route-1","URIRoot":"/hello","Backend":"demo-backend-1","Filters":null,"MsgProps":"SOAPAction=foo"}`
-		route2 = `{"Name":"demo-route-2","URIRoot":"/hello","Backend":"demo-backend-2","Filters":null,"MsgProps":"SOAPAction=bar"}`
+		route1 = `{"Name":"demo-route-1","URIRoot":"/hello","Backend":"demo-backend-1","Plugins":null,"MsgProps":"SOAPAction=foo"}`
+		route2 = `{"Name":"demo-route-2","URIRoot":"/hello","Backend":"demo-backend-2","Plugins":null,"MsgProps":"SOAPAction=bar"}`
 
 		listener = `{"Name":"demo-listener","RouteNames":["demo-route-1","demo-route-2"]}`
 	)

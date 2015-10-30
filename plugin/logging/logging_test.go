@@ -22,7 +22,7 @@ func handleFoo(rw http.ResponseWriter, req *http.Request) {
 
 }
 
-func TestLoggingFilterPreservesIO(t *testing.T) {
+func TestLoggingPluginPreservesIO(t *testing.T) {
 
 	wrapperFactory := NewLoggingWrapper()
 	assert.NotNil(t, wrapperFactory)

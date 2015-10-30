@@ -45,10 +45,10 @@ func buildRoute(name string, kvs kvstore.KVStore) (*route, error) {
 	r.URIRoot = routeConfig.URIRoot
 	r.Backend = backend
 
-	for _, filterName := range routeConfig.Filters {
-		factory, err := plugin.LookupWrapperFactory(filterName)
+	for _, pluginName := range routeConfig.Plugins {
+		factory, err := plugin.LookupWrapperFactory(pluginName)
 		if err != nil {
-			return nil, fmt.Errorf("No wrapper factory with name %s in registry", filterName)
+			return nil, fmt.Errorf("No wrapper factory with name %s in registry", pluginName)
 		}
 
 		log.Debug("adding wrapper factory to factories")

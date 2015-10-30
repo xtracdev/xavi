@@ -12,7 +12,7 @@ type RouteConfig struct {
 	Name     string
 	URIRoot  string
 	Backend  string
-	Filters  []string
+	Plugins []string
 	MsgProps string
 }
 

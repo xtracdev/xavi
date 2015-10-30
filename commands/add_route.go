@@ -25,7 +25,7 @@ func (ar *AddRoute) Help() string {
 		-name Route name
 		-backend Backend name
 		-base-uri Base uri to match
-		-filters Optional list of filter names
+		-plugins Optional list of plugin names
 		-msgprop Message properties for matching route
 		`
 
@@ -43,9 +43,9 @@ func (ar *AddRoute) validateBackend(name string) (bool, error) {
 	return backend != nil, nil
 }
 
-func filtersRegistered(filters []string) (string, bool) {
-	if len(filters) > 0 && filters[0] != "" {
-		for _, f := range filters {
+func pluginssRegistered(plugins []string) (string, bool) {
+	if len(plugins) > 0 && plugins[0] != "" {
+		for _, f := range plugins {
 			if !plugin.RegistryContains(f) {
 				return f, false
 			}
@@ -57,13 +57,13 @@ func filtersRegistered(filters []string) (string, bool) {
 
 //Run executes the AddRoute command using the provided arguments
 func (ar *AddRoute) Run(args []string) int {
-	var name, backend, baseuri, filterList, msgprop string
+	var name, backend, baseuri, pluginList, msgprop string
 	cmdFlags := flag.NewFlagSet("add-route", flag.ContinueOnError)
 	cmdFlags.Usage = func() { ar.UI.Output(ar.Help()) }
 	cmdFlags.StringVar(&name, "name", "", "")
 	cmdFlags.StringVar(&backend, "backend", "", "")
 	cmdFlags.StringVar(&baseuri, "base-uri", "", "")
-	cmdFlags.StringVar(&filterList, "filters", "", "")
+	cmdFlags.StringVar(&pluginList, "plugins", "", "")
 	cmdFlags.StringVar(&msgprop, "msgprop", "", "")
 
 	if err := cmdFlags.Parse(args); err != nil {
@@ -99,12 +99,12 @@ func (ar *AddRoute) Run(args []string) int {
 		return 1
 	}
 
-	var filters []string
-	if filterList != "" {
-		filters = strings.Split(filterList, ",")
-		unregistered, filtersRegistered := filtersRegistered(filters)
-		if !filtersRegistered {
-			ar.UI.Error("Error: filter list contains unregistered filter: '" + unregistered + "'")
+	var plugins []string
+	if pluginList != "" {
+		plugins = strings.Split(pluginList, ",")
+		unregistered, pluginsRegistered := pluginssRegistered(plugins)
+		if !pluginsRegistered {
+			ar.UI.Error("Error: plugin list contains unregistered plugin: '" + unregistered + "'")
 			return 1
 		}
 	}
@@ -113,7 +113,7 @@ func (ar *AddRoute) Run(args []string) int {
 		Name:     name,
 		Backend:  backend,
 		URIRoot:  baseuri,
-		Filters:  filters,
+		Plugins:  plugins,
 		MsgProps: msgprop,
 	}
 
