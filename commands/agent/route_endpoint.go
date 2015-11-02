@@ -21,7 +21,7 @@ var (
 	errRouteResourceMissing = errors.New("Route resource not present in url - expected /v1/routes/route-resource")
 )
 
-//Exported RouteDef for external reference
+//RouteDefCmd is the RouteDef instance used to expose as an API endpoint.
 var RouteDefCmd RouteDef
 
 //RouteDef is used to hang the ApiCommand functions needed for exposing route def capabilities
@@ -110,6 +110,7 @@ func (RouteDef) GetDefinition(kvs kvstore.KVStore, resp http.ResponseWriter, req
 
 }
 
+//DoPost handles post requests, which are not allowed for RouteDef.
 func (RouteDef) DoPost(kvs kvstore.KVStore, resp http.ResponseWriter, req *http.Request) (interface{}, error) {
 	resp.WriteHeader(http.StatusMethodNotAllowed)
 	return nil, nil

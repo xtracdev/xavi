@@ -58,7 +58,6 @@ func (al *AddListener) Run(args []string) int {
 		return 1
 	}
 
-	//TODO - validate routes
 	listenerDef := &config.ListenerConfig{
 		Name:       name,
 		RouteNames: strings.Split(routes, ","),

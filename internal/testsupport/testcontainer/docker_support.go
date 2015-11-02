@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+//ReadDockerEnv reads docker environment variables needed by the docker APIs
 func ReadDockerEnv() (string, string) {
 
 	dockerHome := os.Getenv("DOCKER_HOST")
@@ -26,6 +27,7 @@ func ReadDockerEnv() (string, string) {
 	return dockerHome, dockerCertPath
 }
 
+//BuildDockerTLSConfig builds the docker TLS configuration needed by the API
 func BuildDockerTLSConfig(dockerCertPath string) *tls.Config {
 
 	caFile := fmt.Sprintf("%s/ca.pem", dockerCertPath)
@@ -46,6 +48,7 @@ func BuildDockerTLSConfig(dockerCertPath string) *tls.Config {
 	return tlsConfig
 }
 
+//GetAcceptanceTestContainerInfo returns information about the specified container type
 func GetAcceptanceTestContainerInfo(docker *dockerclient.DockerClient, containerType string) *dockerclient.ContainerInfo {
 
 	// Get only running containers
@@ -71,6 +74,7 @@ func GetAcceptanceTestContainerInfo(docker *dockerclient.DockerClient, container
 	return nil
 }
 
+//ContainerContext defines context relevant to creating containers via this package
 type ContainerContext struct {
 	ImageName string
 	Labels    map[string]string
@@ -87,7 +91,7 @@ func createContainer(docker *dockerclient.DockerClient, ctx *ContainerContext) (
 	//Make a collection of exposed ports
 	var exposedPorts map[string]struct{}
 	exposedPorts = make(map[string]struct{})
-	for k, _ := range ctx.PortContext {
+	for k := range ctx.PortContext {
 		exposedPorts[k] = struct{}{}
 	}
 
@@ -103,7 +107,7 @@ func createContainer(docker *dockerclient.DockerClient, ctx *ContainerContext) (
 
 }
 
-func startContainer(docker *dockerclient.DockerClient, containerId string, ctx *ContainerContext) error {
+func startContainer(docker *dockerclient.DockerClient, containID string, ctx *ContainerContext) error {
 	//Build the port bindings needed when running the container
 	dockerHostConfig := new(dockerclient.HostConfig)
 	dockerHostConfig.PortBindings = make(map[string][]dockerclient.PortBinding)
@@ -116,9 +120,10 @@ func startContainer(docker *dockerclient.DockerClient, containerId string, ctx *
 	dockerHostConfig.Links = ctx.Links
 
 	//Start the container
-	return docker.StartContainer(containerId, dockerHostConfig)
+	return docker.StartContainer(containID, dockerHostConfig)
 }
 
+//CreateAndStartContainer creates abd starts the container given the context specifying the desired container properties
 func CreateAndStartContainer(docker *dockerclient.DockerClient, ctx *ContainerContext) string {
 
 	//Make sure the required image is present
@@ -128,20 +133,20 @@ func CreateAndStartContainer(docker *dockerclient.DockerClient, ctx *ContainerCo
 	}
 
 	//Create the container
-	containerId, err := createContainer(docker, ctx)
+	containerID, err := createContainer(docker, ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//Start the container
-	err = startContainer(docker, containerId, ctx)
+	err = startContainer(docker, containerID, ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Println("...container started...")
 
-	return containerId
+	return containerID
 }
 
 func requiredImageAvailable(docker *dockerclient.DockerClient, name string) bool {

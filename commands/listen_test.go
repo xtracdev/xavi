@@ -44,7 +44,7 @@ func TestListenerHelp(t *testing.T) {
 
 func TestListenerParseError(t *testing.T) {
 	_, listener := testMakeListenCmd(false, false)
-	var args = []string{"-crapfest"}
+	var args = []string{"-foofest"}
 	status := listener.Run(args)
 	assert.Equal(t, 1, status)
 }

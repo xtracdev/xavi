@@ -1,6 +1,5 @@
 package logging
 
-//TODO - handle broken pipes and other connection issues
 
 import (
 	"fmt"

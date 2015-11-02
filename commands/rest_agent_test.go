@@ -34,7 +34,7 @@ func TestRestAgentHelp(t *testing.T) {
 
 func TestRestAgentParseError(t *testing.T) {
 	_, listener := testMakeRestAgentCmd()
-	var args = []string{"-crapfest"}
+	var args = []string{"-foofest"}
 	status := listener.Run(args)
 	assert.Equal(t, 1, status)
 }

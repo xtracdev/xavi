@@ -134,6 +134,7 @@ func (hkvs *HashKVStore) DumpToFile() error {
 
 }
 
+//LoadFromFile loads the flushed KVStore representation from file into memory
 func (hkvs *HashKVStore) LoadFromFile() error {
 	if hkvs.backingFile == "" {
 		return fmt.Errorf("No path to backing file specified")
@@ -160,6 +161,7 @@ func (hkvs *HashKVStore) LoadFromFile() error {
 	return nil
 }
 
+//Flush writes the KVStore in memory representation to disk.
 func (hkvs *HashKVStore) Flush() error {
 	if hkvs.backingFile == "" {
 		log.Info("Flush called on HashKNStore with no backing file - ignoring.")

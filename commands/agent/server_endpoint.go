@@ -22,7 +22,7 @@ var (
 	errServiceResourceMissing = errors.New("Server resource not present in url - expected /v1/servers/server-resource")
 )
 
-//Exported ServerDef for external reference
+//ServerDefCmd is the ServerDef instance used to expose as an API endpoint.
 var ServerDefCmd ServerDef
 
 //ServerDef is used to hang the ApiCommand functions needed for exposing server def capabilities
@@ -111,6 +111,7 @@ func (ServerDef) GetDefinition(kvs kvstore.KVStore, resp http.ResponseWriter, re
 
 }
 
+//DoPost handles post request, which are not allowed for ServerDef.
 func (ServerDef) DoPost(kvs kvstore.KVStore, resp http.ResponseWriter, req *http.Request) (interface{}, error) {
 	resp.WriteHeader(http.StatusMethodNotAllowed)
 	return nil, nil

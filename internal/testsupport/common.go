@@ -383,8 +383,6 @@ func SpawnTestContainers() map[string]string {
 	if bootedOneOrMoreContainers {
 		//If the test hits the xavi container right away the test set up fails, as the container state
 		//can be running before xavi is ready to accept traffic.
-		//TODO - add a 'ping' call in the common test library to get a 200 response on a config API list
-		//service, ignoring errors - once 200 returns then the service is available and tests can proceed.
 		time.Sleep(1 * time.Second)
 	}
 

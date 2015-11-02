@@ -13,7 +13,7 @@ const (
 	spawnKillURI = "/v1/spawn-killer/"
 )
 
-//Exported SpawnKillerDef for external reference
+//SpawnKillerDefCmd is the SpawnKillerDef instance used to expose as an API endpoint.
 var SpawnKillerDefCmd SpawnKillerDef
 
 //SpawnKillerDef is used to hang the ApiCommand functions needed for killing spawned processes
@@ -43,6 +43,8 @@ func (SpawnKillerDef) GetDefinitionList(kvs kvstore.KVStore, resp http.ResponseW
 	return nil, nil
 }
 
+//DoPost handles post requests, which are used to spawn new listener instances. This service is intended to
+//support testability, and will likely not be exposed in production configurations.
 func (SpawnKillerDef) DoPost(kvs kvstore.KVStore, resp http.ResponseWriter, req *http.Request) (interface{}, error) {
 	pidToKill := resourceIDFromURI(req.RequestURI)
 	log.Info("request kill of pid ", pidToKill)

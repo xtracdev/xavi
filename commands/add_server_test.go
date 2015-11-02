@@ -48,7 +48,7 @@ func TestAddServer(t *testing.T) {
 
 func TestAddServerParseArgsError(t *testing.T) {
 	_, addServer := testMakeAddServer(false)
-	args := []string{"-crapfest"}
+	args := []string{"-foofest"}
 	status := addServer.Run(args)
 	assert.Equal(t, 1, status)
 }

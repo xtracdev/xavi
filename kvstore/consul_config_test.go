@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-//TODO - do we need consulConfigFromEnv anymore?
 func TestDefault(t *testing.T) {
 	u, err := url.Parse("consul://127.0.0.1:8500")
 	assert.Nil(t, err)

@@ -100,7 +100,7 @@ func TestAddBackendSynopsis(t *testing.T) {
 
 func TestAddBackendParseArgsError(t *testing.T) {
 	_, addBackend := testMakeAddBackend(false)
-	args := []string{"-crapfest"}
+	args := []string{"-foofest"}
 	status := addBackend.Run(args)
 	assert.Equal(t, 1, status)
 }

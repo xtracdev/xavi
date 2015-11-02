@@ -63,7 +63,6 @@ func (b *backend) String() string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("Backend: %s\n", b.Name))
 
-	//TODO - can we delegate a String() call to the load balancer?
 	return buffer.String()
 }
 

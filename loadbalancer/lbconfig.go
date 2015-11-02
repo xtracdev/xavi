@@ -53,7 +53,7 @@ func IsKnownLoadBalancerPolicy(policyName string) bool {
 func RegisteredLoadBalancers() string {
 	var buffer bytes.Buffer
 	first := true
-	for k, _ := range loadBalancerFactories {
+	for k := range loadBalancerFactories {
 		if first {
 			first = false
 		} else {

@@ -175,7 +175,7 @@ func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]gua
 
 //Make a uri handler map by reducing the gaurded URI handlers into a single handler that
 //delegates the call to the first matching route guard condition.
-func makeUriHandlerMap(ghMap map[string][]guardAndHandler) map[string]http.Handler {
+func makeURIHandlerMap(ghMap map[string][]guardAndHandler) map[string]http.Handler {
 	handlerMap := make(map[string]http.Handler)
 	for uri, guardAndHandlers := range ghMap {
 		handlerMap[uri] = reduceHandlers(guardAndHandlers)
@@ -184,7 +184,7 @@ func makeUriHandlerMap(ghMap map[string][]guardAndHandler) map[string]http.Handl
 }
 
 //Reduce handlers creates a single handler function from all the guarded and unguarded handlers
-//assocaited with a route URI.
+//associated with a route URI.
 func reduceHandlers(guardHandlerPairs []guardAndHandler) http.Handler {
 	log.Debug("reduceHandlers called")
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -268,7 +268,7 @@ func (ms *managedService) Run() {
 	log.Debug("Arranging routes by uri and generating handlers")
 	uriToRoutesMap := ms.mapUrisToRoutes()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriToRoutesMap)
-	uriHandlerMap := makeUriHandlerMap(uriToGuardAndHandlerMap)
+	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
 	for uri, handler := range uriHandlerMap {
 		mux.Handle(uri, handler)

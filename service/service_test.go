@@ -43,12 +43,12 @@ func (aw testWrapper) Wrap(h http.Handler) http.Handler {
 	})
 }
 
-func makeTestBackend(t *testing.T, testServerUrl string, loadBalancerPolicyName string) *backend {
+func makeTestBackend(t *testing.T, testServerURL string, loadBalancerPolicyName string) *backend {
 
-	testUrl, err := url.Parse(testServerUrl)
+	testURL, err := url.Parse(testServerURL)
 	assert.Nil(t, err)
 
-	hostAndPort := strings.Split(testUrl.Host, ":")
+	hostAndPort := strings.Split(testURL.Host, ":")
 	port, _ := strconv.Atoi(hostAndPort[1])
 
 	serverConfig := config.ServerConfig{
@@ -258,7 +258,7 @@ func makePanickyServiceConfig(t *testing.T) *managedService {
 
 }
 
-func validateUriRoutesMap(uriRoutesMap map[string][]route, t *testing.T) {
+func validateURIRoutesMap(uriRoutesMap map[string][]route, t *testing.T) {
 
 	assert.Equal(t, 2, len(uriRoutesMap))
 
@@ -271,7 +271,7 @@ func validateUriRoutesMap(uriRoutesMap map[string][]route, t *testing.T) {
 	assert.Equal(t, 1, len(barRoutes))
 }
 
-func validateUriToGuardAndHandlerMapping(ghMap map[string][]guardAndHandler, t *testing.T) {
+func validateURIToGuardAndHandlerMapping(ghMap map[string][]guardAndHandler, t *testing.T) {
 	assert.Equal(t, 2, len(ghMap))
 
 	fooRoutes := ghMap["/foo"]
@@ -316,7 +316,7 @@ func validateUriToGuardAndHandlerMapping(ghMap map[string][]guardAndHandler, t *
 	assert.True(t, match)
 }
 
-func validateUriHandlerMap(handlers map[string]http.Handler, t *testing.T) {
+func validateURIHandlerMap(handlers map[string]http.Handler, t *testing.T) {
 	assert.Equal(t, 2, len(handlers))
 	assert.NotNil(t, handlers["/foo"])
 	assert.NotNil(t, handlers["/bar"])
@@ -353,21 +353,21 @@ func validateGuardGenHandlingOfBrokerMsgProp(handlers map[string]http.Handler, t
 func TestMakeOfHandlersFromConfig(t *testing.T) {
 	ms := makeListenerWithRoutesForTest(t, "")
 	uriRoutesMap := ms.mapUrisToRoutes()
-	validateUriRoutesMap(uriRoutesMap, t)
+	validateURIRoutesMap(uriRoutesMap, t)
 
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
-	validateUriToGuardAndHandlerMapping(uriToGuardAndHandlerMap, t)
+	validateURIToGuardAndHandlerMapping(uriToGuardAndHandlerMap, t)
 
 	t.Log("Validate handler creation")
-	uriHandlerMap := makeUriHandlerMap(uriToGuardAndHandlerMap)
-	validateUriHandlerMap(uriHandlerMap, t)
+	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
+	validateURIHandlerMap(uriHandlerMap, t)
 }
 
 func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 	ms := makeListenerWithBrokenMsgPropForTest(t)
 	uriRoutesMap := ms.mapUrisToRoutes()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
-	uriHandlerMap := makeUriHandlerMap(uriToGuardAndHandlerMap)
+	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
 	handler := uriHandlerMap["/foo"]
 	ts := httptest.NewServer(handler)

@@ -33,9 +33,6 @@ func (ab *AddBackend) Help() string {
 	return strings.TrimSpace(helpText)
 }
 
-//TODO - need to use flags Var to populate a slice of server names
-//see https://golang.org/src/flag/example_test.go
-
 //Run processed the command line argument passed in args for adding
 //a backend configuration to the KV store assocaited with AddBackend
 func (ab *AddBackend) Run(args []string) int {
@@ -74,7 +71,6 @@ func (ab *AddBackend) Run(args []string) int {
 		return 1
 	}
 
-	//TODO - validate server names
 	backend := &config.BackendConfig{
 		Name:               name,
 		ServerNames:        strings.Split(serverList, ","),

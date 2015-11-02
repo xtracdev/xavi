@@ -54,7 +54,7 @@ func TestAddListener(t *testing.T) {
 
 func TestAddListenerParseArgsError(t *testing.T) {
 	_, addListener := testMakeAddListener(false)
-	args := []string{"-crapfest"}
+	args := []string{"-foofest"}
 	status := addListener.Run(args)
 	assert.Equal(t, 1, status)
 }

@@ -45,7 +45,7 @@ func isSpawnedPid(pid int) bool {
 	return ok
 }
 
-//Exported SpawnListenerDefCmd for external reference
+//SpawnListenerDefCmd is the SpawnKillerDef instance used to expose as an API endpoint.
 var SpawnListenerDefCmd SpawnListenerDef
 
 //SpawnListenerDef is used to hang the ApiCommand functions needed for spawning xavi instances

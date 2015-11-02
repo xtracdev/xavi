@@ -21,7 +21,7 @@ var (
 	errBackendResourceMissing = errors.New("Backend resource not present in url - expected /v1/backends/backend-resource")
 )
 
-//Exported BackendDef for external reference
+//BackendDefCmd is the exported backend service instance used to expose an API service
 var BackendDefCmd BackendDef
 
 //BackendDef is used to hang the ApiCommand functions needed for exposing backend def capabilities
@@ -110,6 +110,7 @@ func (BackendDef) GetDefinition(kvs kvstore.KVStore, resp http.ResponseWriter, r
 
 }
 
+//DoPost interface method implementation. Method is not allowed for BackebdDef.
 func (BackendDef) DoPost(kvs kvstore.KVStore, resp http.ResponseWriter, req *http.Request) (interface{}, error) {
 	resp.WriteHeader(http.StatusMethodNotAllowed)
 	return nil, nil

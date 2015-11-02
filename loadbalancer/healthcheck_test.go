@@ -85,9 +85,9 @@ func TestMakeHealthCheck(t *testing.T) {
 	lbEndpoint.PingURI = "/foo"
 	lbEndpoint.Up = false
 
-	testUrl, err := url.Parse(ts.URL)
+	testURL, err := url.Parse(ts.URL)
 	assert.Nil(t, err)
-	_, portStr, err := net.SplitHostPort(testUrl.Host)
+	_, portStr, err := net.SplitHostPort(testURL.Host)
 	assert.Nil(t, err)
 
 	port, err := strconv.Atoi(portStr)
@@ -124,9 +124,9 @@ func TestMakeHealthCheckUnhealthy(t *testing.T) {
 	lbEndpoint.PingURI = "/foo"
 	lbEndpoint.Up = false
 
-	testUrl, err := url.Parse(ts.URL)
+	testURL, err := url.Parse(ts.URL)
 	assert.Nil(t, err)
-	_, portStr, err := net.SplitHostPort(testUrl.Host)
+	_, portStr, err := net.SplitHostPort(testURL.Host)
 	assert.Nil(t, err)
 
 	port, err := strconv.Atoi(portStr)
@@ -164,9 +164,9 @@ func TestMakeHealthCheckTimeout(t *testing.T) {
 	lbEndpoint.PingURI = "/foo"
 	lbEndpoint.Up = false
 
-	testUrl, err := url.Parse(ts.URL)
+	testURL, err := url.Parse(ts.URL)
 	assert.Nil(t, err)
-	_, portStr, err := net.SplitHostPort(testUrl.Host)
+	_, portStr, err := net.SplitHostPort(testURL.Host)
 	assert.Nil(t, err)
 
 	port, err := strconv.Atoi(portStr)

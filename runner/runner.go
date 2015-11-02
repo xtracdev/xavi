@@ -7,6 +7,8 @@ import (
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/shell"
 	"net/http"
+
+	//Needed to pickup the package imports for the profiler
 	_ "net/http/pprof"
 	"os"
 	"runtime"
@@ -82,6 +84,7 @@ func fireUpPProf() bool {
 
 }
 
+//Run starts a process delegating to the shell.DoMain function
 func Run(args []string, pluginRegistrationFn func()) {
 	fireUpPProf()
 	kvs := setupXAVIEnvironment(pluginRegistrationFn)

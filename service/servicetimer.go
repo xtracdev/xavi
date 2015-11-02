@@ -18,9 +18,10 @@ const (
 	perflogTag = "perflog"
 )
 
+//ServiceTimer is used to hold context for capturing service timings
 type ServiceTimer struct {
 	state            int
-	txnId            string
+	txnID            string
 	uri              string
 	soapAction       string
 	serviceStartTime time.Time
@@ -43,9 +44,10 @@ func generateTxnID() string {
 	return hex.EncodeToString(buf)
 }
 
+//NewServiceTimer instantiates a ServiceTimer instance and records the timer start time.
 func NewServiceTimer(req *http.Request) *ServiceTimer {
 	st := new(ServiceTimer)
-	st.txnId = generateTxnID()
+	st.txnID = generateTxnID()
 	st.state = nominal
 	st.uri = req.RequestURI
 	st.soapAction = req.Header.Get("SOAPAction")
@@ -53,6 +55,7 @@ func NewServiceTimer(req *http.Request) *ServiceTimer {
 	return st
 }
 
+//ConnectFail denotes a failure connecting to a backend
 func (st *ServiceTimer) ConnectFail(err error) {
 	if err == nil {
 		panic("ServiceTimer ConnectFail called with nil error")
@@ -61,10 +64,12 @@ func (st *ServiceTimer) ConnectFail(err error) {
 	st.state = connectPoolError
 }
 
+//BackendCallStart is called when a backend service call starts
 func (st *ServiceTimer) BackendCallStart() {
 	st.backendStartTime = time.Now()
 }
 
+//BackendCallEnd is called when a backend service call completes
 func (st *ServiceTimer) BackendCallEnd(err error) {
 	st.backendEndTime = time.Now()
 	if err != nil {
@@ -73,6 +78,7 @@ func (st *ServiceTimer) BackendCallEnd(err error) {
 	}
 }
 
+//EndService is called when the service timer is to be stopped and processed.
 func (st *ServiceTimer) EndService(status int) {
 	st.serviceEndTime = time.Now()
 
@@ -80,7 +86,7 @@ func (st *ServiceTimer) EndService(status int) {
 	case nominal:
 		log.WithFields(log.Fields{
 			"msgtype":     perflogTag,
-			"txnid":       st.txnId,
+			"txnid":       st.txnID,
 			"uri":         st.uri,
 			"soapAction":  st.soapAction,
 			"serviceTime": st.serviceEndTime.Sub(st.serviceStartTime),
@@ -91,7 +97,7 @@ func (st *ServiceTimer) EndService(status int) {
 	case connectPoolError:
 		log.WithFields(log.Fields{
 			"msgtype":     perflogTag,
-			"txnid":       st.txnId,
+			"txnid":       st.txnID,
 			"uri":         st.uri,
 			"soapAction":  st.soapAction,
 			"serviceTime": st.serviceEndTime.Sub(st.serviceStartTime),
@@ -102,7 +108,7 @@ func (st *ServiceTimer) EndService(status int) {
 	case backendCallError:
 		log.WithFields(log.Fields{
 			"msgtype":     perflogTag,
-			"txnid":       st.txnId,
+			"txnid":       st.txnID,
 			"uri":         st.uri,
 			"soapAction":  st.soapAction,
 			"serviceTime": st.serviceEndTime.Sub(st.serviceStartTime),

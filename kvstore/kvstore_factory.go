@@ -5,6 +5,7 @@ import (
 	"net/url"
 )
 
+//NewKVStore instantiates a KV store implementation based on the url scheme associated with the given url
 func NewKVStore(envURL string) (KVStore, error) {
 	u, err := url.Parse(envURL)
 	if err != nil {

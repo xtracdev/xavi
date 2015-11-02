@@ -64,7 +64,7 @@ func TestAddRouteUnregisteredPlugins(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\"", "-plugins", "crapPlugin"}
+	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\"", "-plugins", "fooPlugin"}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }
@@ -82,7 +82,7 @@ func TestAddRouteParseError(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-crapfest"}
+	args := []string{"-foofest"}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }

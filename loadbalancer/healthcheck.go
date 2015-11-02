@@ -8,9 +8,13 @@ import (
 	"time"
 )
 
+//DefaultHealthCheckInterval is the time between health checks if no value is specified by the configuration
 const DefaultHealthCheckInterval = 30 * 1000 //30 seconds
-const DefaultHealthCheckTimeout = 10 * 1000  //10 seconds
 
+//DefaultHealthCheckTimeout is the timeout for the health check if no value is specified by the configuration
+const DefaultHealthCheckTimeout = 10 * 1000 //10 seconds
+
+//IsKnownHealthCheck returns true for the health check types supported by the toolkit
 func IsKnownHealthCheck(healthcheck string) bool {
 	switch healthcheck {
 	case "none":
@@ -22,6 +26,7 @@ func IsKnownHealthCheck(healthcheck string) bool {
 	}
 }
 
+//KnownHealthChecks returns the names of the health checks supported bt the toolkit
 func KnownHealthChecks() string {
 	return "none, http-get"
 }
@@ -50,7 +55,7 @@ func healthy(endpoint string) <-chan bool {
 }
 
 func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
-	//TODO - what if port is not specified???
+
 	url := fmt.Sprintf("http://%s:%d%s", serverConfig.Address, serverConfig.Port, serverConfig.PingURI)
 	log.Info("Setting healthcheck url to ", url)
 	healthCheckInterval := time.Duration(serverConfig.HealthCheckInterval) * time.Millisecond
@@ -83,6 +88,9 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 
 func noop() {}
 
+//MakeHealthCheck returns a health check function based on the server configuration and load balancer endpoint. The
+//loop arguement is meant to enable testability - normal health check functions run until the listener is shutdown,
+//unit test health checks run once typically.
 func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
 	switch serverConfig.HealthCheck {
 	default:

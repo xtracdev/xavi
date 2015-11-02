@@ -45,8 +45,8 @@ func (a *Agent) registerHandlers() {
 	spawnAPIService := NewAPIService(SpawnListenerDefCmd)
 	a.addHandler(spawnURI, wrap(a.kvstore, spawnAPIService))
 
-	spawnKillApiService := NewAPIService(SpawnKillerDefCmd)
-	a.addHandler(spawnKillURI, wrap(a.kvstore, spawnKillApiService))
+	spawnKillAPIService := NewAPIService(SpawnKillerDefCmd)
+	a.addHandler(spawnKillURI, wrap(a.kvstore, spawnKillAPIService))
 }
 
 func wrap(kvs kvstore.KVStore, apiService *APIService) func(resp http.ResponseWriter, req *http.Request) {

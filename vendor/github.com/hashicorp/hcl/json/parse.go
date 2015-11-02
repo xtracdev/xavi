@@ -3,8 +3,8 @@ package json
 import (
 	"sync"
 
-	"github.com/hashicorp/hcl/hcl"
 	"github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/hcl/hcl"
 )
 
 // jsonErrors are the errors built up from parsing. These should not

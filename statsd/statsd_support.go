@@ -18,14 +18,13 @@ func init() {
 }
 
 func initializeFromEnvironmentSettings() {
-	env_setting := os.Getenv(env.StatsdEndpoint)
-	if env_setting != "" {
+	envSettings := os.Getenv(env.StatsdEndpoint)
+	if envSettings != "" {
 		log.Info("Using buffered statsd client")
-		client := statsdlib.NewStatsdClient(env_setting, "xavi.")
+		client := statsdlib.NewStatsdClient(envSettings, "xavi.")
 		client.CreateSocket()
 		interval := time.Second * 10 // aggregate stats and flush every 10 seconds
 		Statsd = statsdlib.NewStatsdBuffer(interval, client)
-		//defer statsd.Close() TODO golang exit hook
 	} else {
 		log.Info("Using noop statsd interface")
 		var noopClient statsdlib.NoopClient
@@ -33,7 +32,7 @@ func initializeFromEnvironmentSettings() {
 	}
 }
 
-//formatServiceName removes url path separators from the service name. Not doing
+//FormatServiceName removes url path separators from the service name. Not doing
 //this seems to mess up the graphite/whisper storage path and defeats
 //obtaining any metrics. Graphite/carbon/whisper writes a dash instead
 //of the slash, so /hello becomes -hello, etc.

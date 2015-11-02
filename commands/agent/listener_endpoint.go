@@ -21,7 +21,7 @@ var (
 	errListenerResourceMissing = errors.New("Listener resource not present in url - expected /v1/listeners/listener-resource")
 )
 
-//Exported ListenerDef for external reference
+//ListenerDefCmd is the interface instance used to expose as an API endpoint
 var ListenerDefCmd ListenerDef
 
 //ListenerDef is used to hang the ApiCommand functions needed for exposing listener def capabilities
@@ -110,6 +110,7 @@ func (ListenerDef) GetDefinition(kvs kvstore.KVStore, resp http.ResponseWriter, 
 
 }
 
+//DoPost handles post requests, which are not supported for ListenerDef.
 func (ListenerDef) DoPost(kvs kvstore.KVStore, resp http.ResponseWriter, req *http.Request) (interface{}, error) {
 	resp.WriteHeader(http.StatusMethodNotAllowed)
 	return nil, nil

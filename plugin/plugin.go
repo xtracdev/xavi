@@ -76,6 +76,7 @@ func ChainWrappers(hf func(w http.ResponseWriter, r *http.Request), wrapperFacto
 	return handler
 }
 
+//WrapHandlerFunc wraps a handler function.
 func WrapHandlerFunc(hf http.HandlerFunc, wrapperFactories []WrapperFactory) http.HandlerFunc {
 	handler := hf
 	for _, factory := range wrapperFactories {

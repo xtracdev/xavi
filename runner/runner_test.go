@@ -27,9 +27,9 @@ func TestSetup(t *testing.T) {
 
 	currentDir, err := os.Getwd()
 	assert.Nil(t, err)
-	fileUrl := fmt.Sprintf("file:///%s/%s", currentDir, tempFile.Name())
-	println(fileUrl)
-	os.Setenv(env.KVStoreURL, fileUrl)
+	fileURL := fmt.Sprintf("file:///%s/%s", currentDir, tempFile.Name())
+	println(fileURL)
+	os.Setenv(env.KVStoreURL, fileURL)
 
 	kvs := setupXAVIEnvironment(registerLoggingPlugin)
 	assert.NotNil(t, kvs)
