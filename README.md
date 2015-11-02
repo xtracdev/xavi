@@ -1,6 +1,7 @@
 ## XAVI - The XTRAC API Gateway
 
-[![Codeship Status for xtracdev/xavi](https://codeship.com/projects/fa2d0050-3e24-0133-f8eb-5a0949beaeb8/status?branch=master)](https://codeship.com/projects/102711)
+[![Codeship Status for xtracdev/xavi](https://codeship.com/projects/fa2d0050-3e24-0133-f8eb-5a0949beaeb8/status?branch=master)](https://codeship.com/projects/102711) 
+[![Go Report Card](http://goreportcard.com/badge/xtracdev/xavi)](http://goreportcard.com/report/xtracdev/xavi)
 
 
 Xavi is a API gateway that decouples API consumers from API producers. Xavi allows an API contract to be defined and maintained from 
