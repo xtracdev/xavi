@@ -3,15 +3,13 @@ package statsd
 import (
 	"bytes"
 	log "github.com/Sirupsen/logrus"
-	statsdlib "github.com/quipo/statsd"
+	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/env"
 	"os"
 	"strings"
 	"time"
 )
 
-//Statsd provides the statsd interface
-var Statsd statsdlib.Statsd
 
 func init() {
 	initializeFromEnvironmentSettings()
@@ -20,15 +18,19 @@ func init() {
 func initializeFromEnvironmentSettings() {
 	envSettings := os.Getenv(env.StatsdEndpoint)
 	if envSettings != "" {
-		log.Info("Using buffered statsd client")
-		client := statsdlib.NewStatsdClient(envSettings, "xavi.")
-		client.CreateSocket()
-		interval := time.Second * 10 // aggregate stats and flush every 10 seconds
-		Statsd = statsdlib.NewStatsdBuffer(interval, client)
+		log.Info("Using statsd client to send telemetry to ", envSettings)
+		sink, err := metrics.NewStatsdSink(envSettings)
+		if err != nil{
+			log.Warn("Unable to configure statds sink", err.Error())
+			return
+		}
+
+		metrics.NewGlobal(metrics.DefaultConfig("xavi"), sink)
 	} else {
-		log.Info("Using noop statsd interface")
-		var noopClient statsdlib.NoopClient
-		Statsd = noopClient
+		log.Info("Using in memory metrics accumulator - dump via USR1 signal")
+		inm := metrics.NewInmemSink(10*time.Second, 5 * time.Minute)
+		metrics.DefaultInmemSignal(inm)
+		metrics.NewGlobal(metrics.DefaultConfig("xavi"), inm)
 	}
 }
 
@@ -37,6 +39,7 @@ func initializeFromEnvironmentSettings() {
 //obtaining any metrics. Graphite/carbon/whisper writes a dash instead
 //of the slash, so /hello becomes -hello, etc.
 func FormatServiceName(name string) string {
+	log.Info("formatting ", name)
 	parts := strings.Split(name, "/")
 	var buffer bytes.Buffer
 	var firstPart = true
