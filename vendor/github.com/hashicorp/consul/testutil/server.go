@@ -25,6 +25,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"github.com/hashicorp/go-cleanhttp"
 )
 
 // offset is used to atomically increment the port numbers.
@@ -59,6 +61,10 @@ type TestServerConfig struct {
 	Bind              string             `json:"bind_addr,omitempty"`
 	Addresses         *TestAddressConfig `json:"addresses,omitempty"`
 	Ports             *TestPortConfig    `json:"ports,omitempty"`
+	ACLMasterToken    string             `json:"acl_master_token,omitempty"`
+	ACLDatacenter     string             `json:"acl_datacenter,omitempty"`
+	ACLDefaultPolicy  string             `json:"acl_default_policy,omitempty"`
+	Stdout, Stderr    io.Writer          `json:"-"`
 }
 
 // ServerConfigCallback is a function interface which can be
@@ -142,12 +148,11 @@ func NewTestServerConfig(t *testing.T, cb ServerConfigCallback) *TestServer {
 		t.Fatalf("err: %s", err)
 	}
 
-	configFile, err := ioutil.TempFile("", "consul")
+	configFile, err := ioutil.TempFile(dataDir, "config")
 	if err != nil {
 		defer os.RemoveAll(dataDir)
 		t.Fatalf("err: %s", err)
 	}
-	defer os.Remove(configFile.Name())
 
 	consulConfig := defaultServerConfig()
 	consulConfig.DataDir = dataDir
@@ -166,10 +171,20 @@ func NewTestServerConfig(t *testing.T, cb ServerConfigCallback) *TestServer {
 	}
 	configFile.Close()
 
+	stdout := io.Writer(os.Stdout)
+	if consulConfig.Stdout != nil {
+		stdout = consulConfig.Stdout
+	}
+
+	stderr := io.Writer(os.Stderr)
+	if consulConfig.Stderr != nil {
+		stderr = consulConfig.Stderr
+	}
+
 	// Start the server
 	cmd := exec.Command("consul", "agent", "-config-file", configFile.Name())
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -178,16 +193,16 @@ func NewTestServerConfig(t *testing.T, cb ServerConfigCallback) *TestServer {
 	var client *http.Client
 	if strings.HasPrefix(consulConfig.Addresses.HTTP, "unix://") {
 		httpAddr = consulConfig.Addresses.HTTP
+		trans := cleanhttp.DefaultTransport()
+		trans.Dial = func(_, _ string) (net.Conn, error) {
+			return net.Dial("unix", httpAddr[7:])
+		}
 		client = &http.Client{
-			Transport: &http.Transport{
-				Dial: func(_, _ string) (net.Conn, error) {
-					return net.Dial("unix", httpAddr[7:])
-				},
-			},
+			Transport: trans,
 		}
 	} else {
 		httpAddr = fmt.Sprintf("127.0.0.1:%d", consulConfig.Ports.HTTP)
-		client = http.DefaultClient
+		client = cleanhttp.DefaultClient()
 	}
 
 	server := &TestServer{
@@ -203,7 +218,11 @@ func NewTestServerConfig(t *testing.T, cb ServerConfigCallback) *TestServer {
 	}
 
 	// Wait for the server to be ready
-	server.waitForLeader()
+	if consulConfig.Bootstrap {
+		server.waitForLeader()
+	} else {
+		server.waitForAPI()
+	}
 
 	return server
 }
@@ -217,6 +236,26 @@ func (s *TestServer) Stop() {
 	if err := cmd.Run(); err != nil {
 		s.t.Errorf("err: %s", err)
 	}
+}
+
+// waitForAPI waits for only the agent HTTP endpoint to start
+// responding. This is an indication that the agent has started,
+// but will likely return before a leader is elected.
+func (s *TestServer) waitForAPI() {
+	WaitForResult(func() (bool, error) {
+		resp, err := s.HttpClient.Get(s.url("/v1/agent/self"))
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+		if err := s.requireOK(resp); err != nil {
+			return false, err
+		}
+		return true, nil
+	}, func(err error) {
+		defer s.Stop()
+		s.t.Fatalf("err: %s", err)
+	})
 }
 
 // waitForLeader waits for the Consul server's HTTP API to become
@@ -234,7 +273,7 @@ func (s *TestServer) waitForLeader() {
 			return false, err
 		}
 
-		// Ensure we have a leader and a node registeration
+		// Ensure we have a leader and a node registration
 		if leader := resp.Header.Get("X-Consul-KnownLeader"); leader != "true" {
 			fmt.Println(leader)
 			return false, fmt.Errorf("Consul leader status: %#v", leader)

@@ -8,15 +8,19 @@ to manage dependencies, how to preface go commands with godep to pick up stored 
 
 [This article](http://www.goinggo.net/2013/10/manage-dependencies-with-godep.html) provides a nice overview.
 
-Use godep to build, clean, and test, e.g.
+In most cases where you are not modifying dependencies, if you export export GO15VENDOREXPERIMENT=1 then
+the go tools will pick the dependencies in the vendor directory. Note when running tests you need to exclude
+the vendor directory.
 
 <pre>
-godep go build
 godep go test $(go list ./... | grep -v /vendor/)
-godep go clean
 </pre>
 
 Note how ./... can't be used as normal due to it recursing into the vendor directory.
+
+If modifying or adding a dependency, the path of least resistence seems to be unset GO15VENDOREXPERIMENT, then restore
+the environment using godep. Remove Godeps and vendor, do your work, then set GO15VENDOREXPERIMENT and save your 
+dependencies. Refer to the godep documentation for details.
 
 #### Crypto Package
 
