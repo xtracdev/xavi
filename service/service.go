@@ -6,12 +6,12 @@ import (
 	"expvar"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/statsd"
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 )
 
 const (
@@ -20,8 +20,7 @@ const (
 )
 
 var (
-	counts    = expvar.NewMap("counters")
-	statdsInc sync.Mutex
+	counts = expvar.NewMap("counters")
 )
 
 func counterName(method string, path string) string {
@@ -54,9 +53,7 @@ type requestHandler struct {
 
 //Increment service counter
 func incServiceCounter(name string) {
-	statdsInc.Lock()
-	defer statdsInc.Unlock()
-	statsd.Statsd.Incr(statsd.FormatServiceName(name), 1)
+	metrics.IncrCounter([]string{statsd.FormatServiceName(name)}, 1.0)
 }
 
 //Create a handler function from a requestHandler
@@ -83,10 +80,13 @@ func (rh *requestHandler) toHandlerFunc() func(w http.ResponseWriter, r *http.Re
 		log.Debug("invoke backend service")
 		st.BackendCallStart()
 		resp, err := rh.Transport.RoundTrip(r)
+		//TODO - timing context wrapper with better timer name support.
+		metrics.MeasureSince([]string{"timing_" + r.RequestURI}, st.backendStartTime)
 		st.BackendCallEnd(err)
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, "Error: %v", err)
+			metrics.IncrCounter([]string{"error_" + r.RequestURI}, 1.0)
 			go st.EndService(http.StatusServiceUnavailable)
 			return
 		}

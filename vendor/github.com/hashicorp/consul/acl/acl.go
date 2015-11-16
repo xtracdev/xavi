@@ -52,6 +52,19 @@ type ACL interface {
 	// ServiceRead checks for permission to read a given service
 	ServiceRead(string) bool
 
+	// EventRead determines if a specific event can be queried.
+	EventRead(string) bool
+
+	// EventWrite determines if a specific event may be fired.
+	EventWrite(string) bool
+
+	// KeyringRead determines if the encryption keyring used in
+	// the gossip layer can be read.
+	KeyringRead() bool
+
+	// KeyringWrite determines if the keyring can be manipulated
+	KeyringWrite() bool
+
 	// ACLList checks for permission to list all the ACLs
 	ACLList() bool
 
@@ -84,6 +97,22 @@ func (s *StaticACL) ServiceRead(string) bool {
 }
 
 func (s *StaticACL) ServiceWrite(string) bool {
+	return s.defaultAllow
+}
+
+func (s *StaticACL) EventRead(string) bool {
+	return s.defaultAllow
+}
+
+func (s *StaticACL) EventWrite(string) bool {
+	return s.defaultAllow
+}
+
+func (s *StaticACL) KeyringRead() bool {
+	return s.defaultAllow
+}
+
+func (s *StaticACL) KeyringWrite() bool {
 	return s.defaultAllow
 }
 
@@ -135,7 +164,15 @@ type PolicyACL struct {
 	keyRules *radix.Tree
 
 	// serviceRules contains the service policies
-	serviceRules map[string]string
+	serviceRules *radix.Tree
+
+	// eventRules contains the user event policies
+	eventRules *radix.Tree
+
+	// keyringRules contains the keyring policies. The keyring has
+	// a very simple yes/no without prefix matching, so here we
+	// don't need to use a radix tree.
+	keyringRule string
 }
 
 // New is used to construct a policy based ACL from a set of policies
@@ -144,7 +181,8 @@ func New(parent ACL, policy *Policy) (*PolicyACL, error) {
 	p := &PolicyACL{
 		parent:       parent,
 		keyRules:     radix.New(),
-		serviceRules: make(map[string]string, len(policy.Services)),
+		serviceRules: radix.New(),
+		eventRules:   radix.New(),
 	}
 
 	// Load the key policy
@@ -154,8 +192,17 @@ func New(parent ACL, policy *Policy) (*PolicyACL, error) {
 
 	// Load the service policy
 	for _, sp := range policy.Services {
-		p.serviceRules[sp.Name] = sp.Policy
+		p.serviceRules.Insert(sp.Name, sp.Policy)
 	}
+
+	// Load the event policy
+	for _, ep := range policy.Events {
+		p.eventRules.Insert(ep.Event, ep.Policy)
+	}
+
+	// Load the keyring policy
+	p.keyringRule = policy.Keyring
+
 	return p, nil
 }
 
@@ -231,10 +278,8 @@ func (p *PolicyACL) KeyWritePrefix(prefix string) bool {
 // ServiceRead checks if reading (discovery) of a service is allowed
 func (p *PolicyACL) ServiceRead(name string) bool {
 	// Check for an exact rule or catch-all
-	rule, ok := p.serviceRules[name]
-	if !ok {
-		rule, ok = p.serviceRules[""]
-	}
+	_, rule, ok := p.serviceRules.LongestPrefix(name)
+
 	if ok {
 		switch rule {
 		case ServicePolicyWrite:
@@ -253,10 +298,8 @@ func (p *PolicyACL) ServiceRead(name string) bool {
 // ServiceWrite checks if writing (registering) a service is allowed
 func (p *PolicyACL) ServiceWrite(name string) bool {
 	// Check for an exact rule or catch-all
-	rule, ok := p.serviceRules[name]
-	if !ok {
-		rule, ok = p.serviceRules[""]
-	}
+	_, rule, ok := p.serviceRules.LongestPrefix(name)
+
 	if ok {
 		switch rule {
 		case ServicePolicyWrite:
@@ -268,6 +311,58 @@ func (p *PolicyACL) ServiceWrite(name string) bool {
 
 	// No matching rule, use the parent.
 	return p.parent.ServiceWrite(name)
+}
+
+// EventRead is used to determine if the policy allows for a
+// specific user event to be read.
+func (p *PolicyACL) EventRead(name string) bool {
+	// Longest-prefix match on event names
+	if _, rule, ok := p.eventRules.LongestPrefix(name); ok {
+		switch rule {
+		case EventPolicyRead:
+			return true
+		case EventPolicyWrite:
+			return true
+		default:
+			return false
+		}
+	}
+
+	// Nothing matched, use parent
+	return p.parent.EventRead(name)
+}
+
+// EventWrite is used to determine if new events can be created
+// (fired) by the policy.
+func (p *PolicyACL) EventWrite(name string) bool {
+	// Longest-prefix match event names
+	if _, rule, ok := p.eventRules.LongestPrefix(name); ok {
+		return rule == EventPolicyWrite
+	}
+
+	// No match, use parent
+	return p.parent.EventWrite(name)
+}
+
+// KeyringRead is used to determine if the keyring can be
+// read by the current ACL token.
+func (p *PolicyACL) KeyringRead() bool {
+	switch p.keyringRule {
+	case KeyringPolicyRead, KeyringPolicyWrite:
+		return true
+	case KeyringPolicyDeny:
+		return false
+	default:
+		return p.parent.KeyringRead()
+	}
+}
+
+// KeyringWrite determines if the keyring can be manipulated.
+func (p *PolicyACL) KeyringWrite() bool {
+	if p.keyringRule == KeyringPolicyWrite {
+		return true
+	}
+	return p.parent.KeyringWrite()
 }
 
 // ACLList checks if listing of ACLs is allowed
