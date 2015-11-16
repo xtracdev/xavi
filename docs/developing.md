@@ -2,37 +2,28 @@
 
 ### Dependency management
 
-Dependencies are managed via [Godep](https://github.com/tools/godep) using golang 1.5 vendoring support.
-Refer to the documentation for how
-to manage dependencies, how to preface go commands with godep to pick up stored dependencies, etc.
+Dependencies are managed via [Godep](https://github.com/tools/godep) using golang 1.5 vendoring support. Note the
+role of godep is for maintaining the state of the vendor directory; go commands do not need to be
+prefaced with go dep.
 
-[This article](http://www.goinggo.net/2013/10/manage-dependencies-with-godep.html) provides a nice overview.
+Refer to the godep documentation for how to manage dependencies.
 
-In most cases where you are not modifying dependencies, if you export export GO15VENDOREXPERIMENT=1 then
-the go tools will pick the dependencies in the vendor directory. Note when running tests you need to exclude
-the vendor directory.
+When working with this repository, be sure to export GO15VENDOREXPERIMENT=1
+
+Note when applying commands to all subdirectories, you may wish to exclude the vendor subdirectory. For example,
+when running tests, trying to run tests in the vendor subdirectory will fail because the test dependencies for
+vendored libraries are not included.
+
+To exlude the vendor directory when running tests, do this:
 
 <pre>
-godep go test $(go list ./... | grep -v /vendor/)
+go test $(go list ./... | grep -v /vendor/)
 </pre>
-
-Note how ./... can't be used as normal due to it recursing into the vendor directory.
 
 If modifying or adding a dependency, the path of least resistence seems to be unset GO15VENDOREXPERIMENT, then restore
 the environment using godep. Remove Godeps and vendor, do your work, then set GO15VENDOREXPERIMENT and save your 
 dependencies. Refer to the godep documentation for details.
 
-#### Crypto Package
-
-The cryto package has now been vendored via Godeps. The proper path for go get
-and vendoring is golang.org/x/crypto/ssh
-
-There are still some hassles with the crypto package, for example a godep restore
-fails, complaining about the crypto ssh terminal import path, e.g.
-
-<pre>
-godep: unrecognized import path "golang.org/x/crypto/ssh/terminal"
-</pre>
 
 ### Codeship Build Setup
 
@@ -44,7 +35,6 @@ wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
 tar xvzf go1.5.1.linux-amd64.tar.gz
 export GOROOT=$HOME/go
 export PATH=$GOROOT/bin:$PATH
-go get github.com/tools/godep
 export GO15VENDOREXPERIMENT=1
 go version
 cd $GOPATH/src/github.com/xtracdev/xavi
@@ -53,7 +43,7 @@ cd $GOPATH/src/github.com/xtracdev/xavi
 Test Commands
 
 <pre>
-godep go test $(go list ./... | grep -v /vendor/)
+go test $(go list ./... | grep -v /vendor/)
 </pre>
 
 
@@ -86,14 +76,14 @@ For details on cross compiling see https://gist.github.com/d-smith/9d7ca1baa7213
 TL;DR
 
 <pre>
-GOOS=linux GOARCH=386 CGO_ENABLED=0 godep go build
+GOOS=linux GOARCH=386 CGO_ENABLED=0 go build
 </pre>
 
 
 
 ### Go Code Coverage
 
-		godep go test -coverprofile=coverage.out; go tool cover -html=coverage.out
+		go test -coverprofile=coverage.out; go tool cover -html=coverage.out
 		
 #### Go Code Coverage with Gocov
 
@@ -131,6 +121,15 @@ VBoxManage controlvm default natpf1 "xavi-rest-agent,tcp,127.0.0.1,8080,,8080"
 VBoxManage controlvm default natpf1 "xavi-test-server,tcp,127.0.0.1,9000,,9000"
 </pre>
 
+Once docker machine is configured correctly, you can run the acceptance tests in a freshly clone repo like this:
+
+<pre>
+go get github.com/lsegal/gucumber/cmd/gucumber
+docker-machine start default
+eval "$(docker-machine env default)"
+gucumber
+</pre>
+
 #### Mountebank
 
 Note the above port forwarding - it maps the host os perspective to the guest os
@@ -152,7 +151,7 @@ docker run -d -p 2626:2525 --name mountebank --label 'xt-container-type=atest-mb
 #### XAVI Docker set up
 
 Note that you must first cross-compile xavi for linux and copy it into docker/xavi-alpine 
-before building the image, e.g. `GOOS=linux GOARCH=386 CGO_ENABLED=0 godep go build`
+before building the image, e.g. `GOOS=linux GOARCH=386 CGO_ENABLED=0 go build`
 
 Build the image in the docker/xavi-alpine directory
 
