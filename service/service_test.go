@@ -166,26 +166,27 @@ func TestExpVarsHandler(t *testing.T) {
 
 func makeListenerWithRoutesForTest(t *testing.T, loadBalancerPolicyName string) *managedService {
 
-	backend := makeTestBackend(t, "http://localhost:666", loadBalancerPolicyName)
+	testBackend := makeTestBackend(t, "http://localhost:666", loadBalancerPolicyName)
+	backends := []*backend{testBackend}
 
 	var r1 = route{
 		Name:     "route1",
 		URIRoot:  "/foo",
-		Backend:  backend,
+		Backends: backends,
 		MsgProps: "Foo=bar",
 	}
 
 	var r2 = route{
 		Name:     "route2",
 		URIRoot:  "/foo",
-		Backend:  backend,
+		Backends: backends,
 		MsgProps: "Foo=baz",
 	}
 
 	var r3 = route{
-		Name:    "route3",
-		URIRoot: "/bar",
-		Backend: backend,
+		Name:     "route3",
+		URIRoot:  "/bar",
+		Backends: backends,
 	}
 
 	var ms = managedService{
@@ -200,26 +201,27 @@ func makeListenerWithRoutesForTest(t *testing.T, loadBalancerPolicyName string) 
 
 func makeListenerWithBrokenMsgPropForTest(t *testing.T) *managedService {
 
-	backend := makeTestBackend(t, "http://localhost:666", "")
+	testBackend := makeTestBackend(t, "http://localhost:666", "")
+	backends := []*backend{testBackend}
 
 	var r1 = route{
 		Name:     "route1",
 		URIRoot:  "/foo",
-		Backend:  backend,
+		Backends: backends,
 		MsgProps: "xxxxx",
 	}
 
 	var r2 = route{
 		Name:     "route2",
 		URIRoot:  "/foo",
-		Backend:  backend,
+		Backends: backends,
 		MsgProps: "Foo",
 	}
 
 	var r3 = route{
-		Name:    "route3",
-		URIRoot: "/bar",
-		Backend: backend,
+		Name:     "route3",
+		URIRoot:  "/bar",
+		Backends: backends,
 	}
 
 	var ms = managedService{
@@ -234,18 +236,19 @@ func makeListenerWithBrokenMsgPropForTest(t *testing.T) *managedService {
 
 func makePanickyServiceConfig(t *testing.T) *managedService {
 
-	backend := makeTestBackend(t, "http://localhost:666", "round-robin")
+	testBackend := makeTestBackend(t, "http://localhost:666", "round-robin")
+	backends := []*backend{testBackend}
 
 	var r1 = route{
-		Name:    "route1",
-		URIRoot: "/foo",
-		Backend: backend,
+		Name:     "route1",
+		URIRoot:  "/foo",
+		Backends: backends,
 	}
 
 	var r2 = route{
-		Name:    "route2",
-		URIRoot: "/foo",
-		Backend: backend,
+		Name:     "route2",
+		URIRoot:  "/foo",
+		Backends: backends,
 	}
 
 	var ms = managedService{

@@ -21,7 +21,7 @@ func testMakeListRoutes(faultyStore bool, withRoute bool) (*bytes.Buffer, *Route
 	}
 
 	if withRoute {
-		b := &config.RouteConfig{"Route1", "/foo", "b1", nil, ""}
+		b := &config.RouteConfig{"Route1", "/foo", []string{"b1"}, nil, ""}
 		b.Store(kvs)
 	}
 

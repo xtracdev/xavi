@@ -12,7 +12,7 @@ func TestJSON2Route(t *testing.T) {
 		{
 			"name":"route1",
 			"uriRoot":"/hello",
-			"backend":"hello-backend",	
+			"backends":["hello-backend","hello-backend2"],
 			"plugins":["plugin1","plugin2","plugin3"],
 			"MsgProps":"SOAPAction:\"foo\""
 		}`
@@ -27,7 +27,9 @@ func TestJSON2Route(t *testing.T) {
 func testVerifyRouteRead(r *RouteConfig, t *testing.T) {
 	assert.Equal(t, "route1", r.Name)
 	assert.Equal(t, "/hello", r.URIRoot)
-	assert.Equal(t, "hello-backend", r.Backend)
+	assert.Equal(t, 2, len(r.Backends))
+	assert.Equal(t, "hello-backend", r.Backends[0])
+	assert.Equal(t, "hello-backend2", r.Backends[1])
 	assert.Equal(t, 3, len(r.Plugins))
 	assert.Equal(t, "plugin1", r.Plugins[0])
 	assert.Equal(t, "plugin2", r.Plugins[1])
@@ -50,7 +52,7 @@ func TestRouteStoreAndRetrieve(t *testing.T) {
 
 	//Store
 	var plugins = []string{"plugin1", "plugin2", "plugin3"}
-	r = &RouteConfig{"route1", "/hello", "hello-backend", plugins, "SOAPAction:\"foo\""}
+	r = &RouteConfig{"route1", "/hello", []string{"hello-backend", "hello-backend2"}, plugins, "SOAPAction:\"foo\""}
 	err = r.Store(testKVS)
 	assert.Nil(t, err)
 

@@ -14,37 +14,7 @@ import (
 
 func initKVStore(t *testing.T) kvstore.KVStore {
 	kvs, _ := kvstore.NewHashKVStore("")
-
-	ln := &config.ListenerConfig{"listener", []string{"route1"}}
-	err := ln.Store(kvs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverConfig1 := &config.ServerConfig{"server1", "localhost", 3000, "/hello", "none", 0, 0}
-	err = serverConfig1.Store(kvs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverConfig2 := &config.ServerConfig{"server2", "localhost", 3100, "/hello", "none", 0, 0}
-	err = serverConfig2.Store(kvs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	r := &config.RouteConfig{"route1", "/hello", "hello-backend", []string{"Logging"}, ""}
-	err = r.Store(kvs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	b := &config.BackendConfig{"hello-backend", []string{"server1", "server2"}, ""}
-	err = b.Store(kvs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	loadTestConfig1(kvs, t)
 	return kvs
 }
 
@@ -66,4 +36,36 @@ func TestServerFactoryWithUnknownListener(t *testing.T) {
 	var testKVS = initKVStore(t)
 	_, err := BuildServiceForListener("no such listener", "0.0.0.0:8000", testKVS)
 	assert.NotNil(t, err)
+}
+
+func loadTestConfig1(kvs kvstore.KVStore, t *testing.T) {
+	ln := &config.ListenerConfig{"listener", []string{"route1"}}
+	err := ln.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverConfig1 := &config.ServerConfig{"server1", "localhost", 3000, "/hello", "none", 0, 0}
+	err = serverConfig1.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverConfig2 := &config.ServerConfig{"server2", "localhost", 3100, "/hello", "none", 0, 0}
+	err = serverConfig2.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := &config.RouteConfig{"route1", "/hello", []string{"hello-backend"}, []string{"Logging"}, ""}
+	err = r.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b := &config.BackendConfig{"hello-backend", []string{"server1", "server2"}, ""}
+	err = b.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

@@ -63,7 +63,7 @@ func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]gua
 
 			requestHandler := &requestHandler{
 				Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-				Backend:   r.Backend,
+				Backend:   r.Backends[0],
 			}
 
 			handlerFn := requestHandler.toHandlerFunc()

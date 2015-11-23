@@ -11,7 +11,7 @@ import (
 type RouteConfig struct {
 	Name     string
 	URIRoot  string
-	Backend  string
+	Backends []string
 	Plugins  []string
 	MsgProps string
 }
