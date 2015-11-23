@@ -15,19 +15,23 @@ func handleAStuff(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("a stuff"))
 }
 
-func (th *TestMRHandler) MultiRouteServeHTTP(bhMap backendHandlerMap, w http.ResponseWriter, r *http.Request) {
+func (th *TestMRHandler) MultiRouteServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 	aHandler := bhMap["A"]
 	aHandler.ServeHTTP(w, r)
 }
 
+func ATestMRHandlerFactory(bhMap BackendHandlerMap, mrHandler MultirouteHandler) *MultiRouteAdapter {
+	return &MultiRouteAdapter{
+		Ctx:     bhMap,
+		Handler: mrHandler,
+	}
+}
+
 func TestMultiRoutePlugin(t *testing.T) {
 
-	var handlerMap backendHandlerMap = make(backendHandlerMap)
+	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
-	adapter := &MultiRouteAdapter{
-		Ctx:     handlerMap,
-		Handler: &TestMRHandler{},
-	}
+	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
 	ts := httptest.NewServer(adapter)
 	defer ts.Close()
@@ -42,12 +46,9 @@ func TestMultiRoutePlugin(t *testing.T) {
 func TestWrappedPlugin(t *testing.T) {
 	wrapper := NewAWrapper()
 
-	var handlerMap backendHandlerMap = make(backendHandlerMap)
+	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
-	adapter := &MultiRouteAdapter{
-		Ctx:     handlerMap,
-		Handler: &TestMRHandler{},
-	}
+	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
 	wrapped := wrapper.Wrap(adapter)
 
