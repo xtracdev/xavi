@@ -26,6 +26,7 @@ func (ar *AddRoute) Help() string {
 		-backends Backend name
 		-base-uri Base uri to match
 		-plugins Optional list of plugin names
+		-multibackend-plugin Plugin injected with multiple backend handlers
 		-msgprop Message properties for matching route
 		`
 
@@ -57,7 +58,7 @@ func pluginssRegistered(plugins []string) (string, bool) {
 
 //Run executes the AddRoute command using the provided arguments
 func (ar *AddRoute) Run(args []string) int {
-	var name, backends, baseuri, pluginList, msgprop string
+	var name, backends, baseuri, pluginList, msgprop, multiPlugin string
 	cmdFlags := flag.NewFlagSet("add-route", flag.ContinueOnError)
 	cmdFlags.Usage = func() { ar.UI.Output(ar.Help()) }
 	cmdFlags.StringVar(&name, "name", "", "")
@@ -65,6 +66,7 @@ func (ar *AddRoute) Run(args []string) int {
 	cmdFlags.StringVar(&baseuri, "base-uri", "", "")
 	cmdFlags.StringVar(&pluginList, "plugins", "", "")
 	cmdFlags.StringVar(&msgprop, "msgprop", "", "")
+	cmdFlags.StringVar(&multiPlugin, "multibackend-plugin", "", "")
 
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -94,6 +96,14 @@ func (ar *AddRoute) Run(args []string) int {
 	}
 
 	cmdBackends := strings.Split(backends, ",")
+
+	//Check that the multi route plugin was specified if multiple backends were configured
+	if len(cmdBackends) > 1 && multiPlugin == "" {
+		ar.UI.Error("-multibackend-plugin must be provided when specifying multiple backends")
+		return 1
+	}
+
+	//Validate backends
 	for _, beName := range cmdBackends {
 		validName, err := ar.validateBackend(beName)
 		if err != nil || !validName {
@@ -113,11 +123,12 @@ func (ar *AddRoute) Run(args []string) int {
 	}
 
 	route := &config.RouteConfig{
-		Name:     name,
-		Backends: cmdBackends,
-		URIRoot:  baseuri,
-		Plugins:  plugins,
-		MsgProps: msgprop,
+		Name:               name,
+		Backends:           cmdBackends,
+		URIRoot:            baseuri,
+		Plugins:            plugins,
+		MsgProps:           msgprop,
+		MultiBackendPlugin: multiPlugin,
 	}
 
 	if err := route.Store(ar.KVStore); err != nil {

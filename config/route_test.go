@@ -52,7 +52,13 @@ func TestRouteStoreAndRetrieve(t *testing.T) {
 
 	//Store
 	var plugins = []string{"plugin1", "plugin2", "plugin3"}
-	r = &RouteConfig{"route1", "/hello", []string{"hello-backend", "hello-backend2"}, plugins, "SOAPAction:\"foo\""}
+	r = &RouteConfig{
+		Name:     "route1",
+		URIRoot:  "/hello",
+		Backends: []string{"hello-backend", "hello-backend2"},
+		Plugins:  plugins,
+		MsgProps: "SOAPAction:\"foo\"",
+	}
 	err = r.Store(testKVS)
 	assert.Nil(t, err)
 

@@ -9,11 +9,12 @@ import (
 
 //RouteConfig represents a route configuration definition
 type RouteConfig struct {
-	Name     string
-	URIRoot  string
-	Backends []string
-	Plugins  []string
-	MsgProps string
+	Name               string
+	URIRoot            string
+	Backends           []string
+	Plugins            []string
+	MultiBackendPlugin string
+	MsgProps           string
 }
 
 //JSONToRoute unmarshals the JSON representation of a route definition
