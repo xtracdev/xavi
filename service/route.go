@@ -45,6 +45,11 @@ func buildRoute(name string, kvs kvstore.KVStore) (*route, error) {
 
 	r.URIRoot = routeConfig.URIRoot
 	r.Backends = backends
+	r.MultiRoutePluginName = routeConfig.MultiBackendPlugin
+
+	if len(r.Backends) == 0 {
+		return nil, errors.New("No backends configured for route")
+	}
 
 	if len(r.Backends) > 1 && r.MultiRoutePluginName == "" {
 		return nil, errors.New("MultiRoute plugin name must be provided when multiple backends are configured")

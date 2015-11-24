@@ -16,6 +16,8 @@ func initKVStore(t *testing.T) kvstore.KVStore {
 	kvs, _ := kvstore.NewHashKVStore("")
 	loadTestConfig1(kvs, t)
 	loadConfigTwoBackendsNoPluginNameSpecified(kvs, t)
+	loadMultiRoute(kvs, t)
+	loadRouteWithNoBackends(kvs, t)
 	return kvs
 }
 
@@ -116,6 +118,50 @@ func loadConfigTwoBackendsNoPluginNameSpecified(kvs kvstore.KVStore, t *testing.
 
 	be2 := &config.BackendConfig{"be2", []string{"server1", "server2"}, ""}
 	err = be2.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func loadMultiRoute(kvs kvstore.KVStore, t *testing.T) {
+	plugin.RegisterWrapperFactory("Logging", logging.NewLoggingWrapper)
+	ln := &config.ListenerConfig{"l2", []string{"r2"}}
+	err := ln.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := &config.RouteConfig{
+		Name:               "r2",
+		URIRoot:            "/hello",
+		Backends:           []string{"be1", "be2"},
+		Plugins:            []string{"Logging"},
+		MsgProps:           "",
+		MultiBackendPlugin: "test-plugin",
+	}
+	err = r.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func loadRouteWithNoBackends(kvs kvstore.KVStore, t *testing.T) {
+	plugin.RegisterWrapperFactory("Logging", logging.NewLoggingWrapper)
+	ln := &config.ListenerConfig{"l2", []string{"r2"}}
+	err := ln.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := &config.RouteConfig{
+		Name:               "r3",
+		URIRoot:            "/hello",
+		Backends:           []string{},
+		Plugins:            []string{"Logging"},
+		MsgProps:           "",
+		MultiBackendPlugin: "test-plugin",
+	}
+	err = r.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
 	}

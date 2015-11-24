@@ -25,4 +25,10 @@ func (mra *MultiRouteAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	mra.Handler.MultiRouteServeHTTP(mra.Ctx, w, r)
 }
 
+func (mra *MultiRouteAdapter) ToHandlerFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mra.Handler.MultiRouteServeHTTP(mra.Ctx, w, r)
+	}
+}
+
 type MultiRouteAdapterFactory func(BackendHandlerMap) *MultiRouteAdapter

@@ -53,7 +53,7 @@ type guardAndHandler struct {
 }
 
 //Map the routes to a guard and handler pair. The guard function is generated for the URI based on
-//the route MsgProps, and the handler is the request handler wrapped by the plugin chaing.
+//the route MsgProps, and the handler is the request handler wrapped by the plugin chaining.
 func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]guardAndHandler {
 	ghMap := make(map[string][]guardAndHandler)
 	for uri, routes := range uriRouteMap {
@@ -61,26 +61,58 @@ func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]gua
 			ghEntries := ghMap[uri]
 			guardFn := makeGuardFunction(r)
 
-			requestHandler := &requestHandler{
-				Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-				Backend:   r.Backends[0],
+			if len(r.Backends) == 1 {
+
+				requestHandler := &requestHandler{
+					Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
+					Backend:   r.Backends[0],
+				}
+
+				handlerFn := requestHandler.toHandlerFunc()
+
+				handler := plugin.WrapHandlerFunc(handlerFn, r.WrapperFactories)
+
+				ghEntry := guardAndHandler{Guard: guardFn, HandlerFn: handler}
+
+				ghEntries = append(ghEntries, ghEntry)
+				ghMap[uri] = ghEntries
+			} else {
+				var handlerMap plugin.BackendHandlerMap = make(plugin.BackendHandlerMap)
+				factoryName := r.MultiRoutePluginName
+				factory, err := plugin.LookupMRAFactory(factoryName)
+				if err != nil {
+					panic("Cannot configure service - no such MultiRoutePluginName: " + factoryName)
+				}
+
+				for _, backend := range r.Backends {
+					log.Debug("handler for ", backend.Name)
+					requestHandler := &requestHandler{
+						Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
+						Backend:   backend,
+					}
+
+					handlerFn := requestHandler.toHandlerFunc()
+
+					handlerMap[backend.Name] = http.HandlerFunc(handlerFn)
+				}
+
+				log.Info("creating handler via factory using", handlerMap)
+				multiRouteHandler := factory(handlerMap)
+
+				handler := plugin.WrapHandlerFunc(multiRouteHandler.ToHandlerFunc(), r.WrapperFactories)
+
+				ghEntry := guardAndHandler{Guard: guardFn, HandlerFn: handler}
+
+				ghEntries = append(ghEntries, ghEntry)
+				ghMap[uri] = ghEntries
 			}
-
-			handlerFn := requestHandler.toHandlerFunc()
-
-			handler := plugin.WrapHandlerFunc(handlerFn, r.WrapperFactories)
-
-			ghEntry := guardAndHandler{Guard: guardFn, HandlerFn: handler}
-
-			ghEntries = append(ghEntries, ghEntry)
-			ghMap[uri] = ghEntries
 		}
 	}
 
 	return ghMap
 }
 
-//Make a uri handler map by reducing the gaurded URI handlers into a single handler that
+//Make a uri handler map by reducing the guarded URI handlers into a single handler that
 //delegates the call to the first matching route guard condition.
 func makeURIHandlerMap(ghMap map[string][]guardAndHandler) map[string]http.Handler {
 	handlerMap := make(map[string]http.Handler)
@@ -135,7 +167,7 @@ func makeGuardFunction(r route) guardFunction {
 		}
 	}
 
-	log.Debug("creating header value comparison gaurd")
+	log.Debug("creating header value comparison guard")
 	return func(req *http.Request) (bool, error) {
 		log.Debug(fmt.Sprintf("test header %s for val %s", headerAndValue[0], headerAndValue[1]))
 		return req.Header.Get(headerAndValue[0]) == headerAndValue[1], nil
@@ -143,7 +175,7 @@ func makeGuardFunction(r route) guardFunction {
 }
 
 //Order the routes by putting those with guard conditions in the front of the slice, with optionally a
-//ungaurded route at the rear of the slice. Note only a single unguarded route for a URI may be configured.
+//unguarded route at the rear of the slice. Note only a single unguarded route for a URI may be configured.
 func orderRoutes(routes []route) []route {
 	if len(routes) <= 1 {
 		return routes

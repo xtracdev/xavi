@@ -199,6 +199,48 @@ func makeListenerWithRoutesForTest(t *testing.T, loadBalancerPolicyName string) 
 
 }
 
+func makeTestBackends(t *testing.T, testServerURL string, loadBalancerPolicyName string) []*backend {
+	b := makeTestBackend(t, testServerURL, loadBalancerPolicyName)
+	return []*backend{b, b}
+}
+
+func makeListenerWithMultiRoutesForTest(t *testing.T, loadBalancerPolicyName string) *managedService {
+
+	var bHandler plugin.MultiRouteHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("b stuff"))
+
+		_, ok := m["A"]
+		if ok == true {
+			w.Write([]byte("context stuff"))
+		}
+	}
+
+	var BMRAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiRouteAdapter {
+		return &plugin.MultiRouteAdapter{
+			Ctx:     bhMap,
+			Handler: bHandler,
+		}
+	}
+
+	plugin.RegisterMRAFactory("test-multiroute-plugin", BMRAFactory)
+
+	testBackends := makeTestBackends(t, "http://localhost:666", "")
+	var r1 = route{
+		Name:                 "route2",
+		URIRoot:              "/foo2",
+		Backends:             testBackends,
+		MultiRoutePluginName: "test-multiroute-plugin",
+	}
+
+	var ms = managedService{
+		Address:      "localhost:1234",
+		ListenerName: "test listener",
+		Routes:       []route{r1},
+	}
+
+	return &ms
+}
+
 func makeListenerWithBrokenMsgPropForTest(t *testing.T) *managedService {
 
 	testBackend := makeTestBackend(t, "http://localhost:666", "")
@@ -349,10 +391,6 @@ func validateURIHandlerMap(handlers map[string]http.Handler, t *testing.T) {
 
 }
 
-func validateGuardGenHandlingOfBrokerMsgProp(handlers map[string]http.Handler, t *testing.T) {
-
-}
-
 func TestMakeOfHandlersFromConfig(t *testing.T) {
 	ms := makeListenerWithRoutesForTest(t, "")
 	uriRoutesMap := ms.mapUrisToRoutes()
@@ -364,6 +402,18 @@ func TestMakeOfHandlersFromConfig(t *testing.T) {
 	t.Log("Validate handler creation")
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 	validateURIHandlerMap(uriHandlerMap, t)
+}
+
+func TestMakeOfHandlersFromMultiRouteConfig(t *testing.T) {
+	ms := makeListenerWithMultiRoutesForTest(t, "")
+	uriRoutesMap := ms.mapUrisToRoutes()
+
+	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
+
+	t.Log("Validate handler creation")
+	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
+
+	println(len(uriHandlerMap))
 }
 
 func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
