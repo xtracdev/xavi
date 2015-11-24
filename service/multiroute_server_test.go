@@ -15,30 +15,39 @@ import (
 	"testing"
 )
 
+const (
+	aBackendResponse          = "a backend stuff\n"
+	bBackendResponse          = "b backend stuff\n"
+	bHandlerStuff             = "b stuff\n"
+	backendA                  = "backendA"
+	backendB                  = "backendB"
+	fooURI                    = "/foo"
+	multiRoutePAdapterFactory = "test-multiroute-plugin"
+)
+
 func handleAStuff(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("a backend stuff\n"))
+	w.Write([]byte(aBackendResponse))
 }
 
 func handleBStuff(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("b backend stuff\n"))
+	w.Write([]byte(bBackendResponse))
 }
 
 func TestMRConfigListener(t *testing.T) {
 	log.SetLevel(log.InfoLevel)
 
 	var bHandler plugin.MultiRouteHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
-		println("handler called")
-		w.Write([]byte("b stuff\n"))
+		w.Write([]byte(bHandlerStuff))
 
-		ah := m["backendA"]
+		ah := m[backendA]
 		ar := httptest.NewRecorder()
 		ah.ServeHTTP(ar, r)
-		assert.Equal(t, "a backend stuff\n", ar.Body.String())
+		assert.Equal(t, aBackendResponse, ar.Body.String())
 
-		bh := m["backendB"]
+		bh := m[backendB]
 		br := httptest.NewRecorder()
 		bh.ServeHTTP(br, r)
-		assert.Equal(t, "b backend stuff\n", br.Body.String())
+		assert.Equal(t, bBackendResponse, br.Body.String())
 	}
 
 	var BMRAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiRouteAdapter {
@@ -48,7 +57,7 @@ func TestMRConfigListener(t *testing.T) {
 		}
 	}
 
-	plugin.RegisterMRAFactory("test-multiroute-plugin", BMRAFactory)
+	plugin.RegisterMRAFactory(multiRoutePAdapterFactory, BMRAFactory)
 
 	AServer := httptest.NewServer(http.HandlerFunc(handleAStuff))
 	BServer := httptest.NewServer(http.HandlerFunc(handleBStuff))
@@ -64,14 +73,14 @@ func TestMRConfigListener(t *testing.T) {
 
 	assert.Equal(t, 1, len(uriHandlerMap))
 
-	ls := httptest.NewServer(uriHandlerMap["/foo"])
+	ls := httptest.NewServer(uriHandlerMap[fooURI])
 	defer ls.Close()
 
-	resp, err := http.Get(ls.URL + "/foo")
+	resp, err := http.Get(ls.URL + fooURI)
 	assert.Nil(t, err)
 	body, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
-	assert.True(t, strings.Contains(string(body), "b stuff"))
+	assert.True(t, strings.Contains(string(body), bHandlerStuff))
 }
 
 func makeServerConfig(name string, theURL string) config.ServerConfig {
@@ -108,18 +117,18 @@ func mrtBuildListener(urlA string, urlB string) *managedService {
 	serverA := makeServerConfig("server1", urlA)
 	serverB := makeServerConfig("server2", urlB)
 
-	backEndA := makeBackend("backendA", serverA)
-	backEndB := makeBackend("backendB", serverB)
+	backEndA := makeBackend(backendA, serverA)
+	backEndB := makeBackend(backendB, serverB)
 
 	var r1 = route{
 		Name:                 "route1",
-		URIRoot:              "/foo",
+		URIRoot:              fooURI,
 		Backends:             []*backend{backEndA, backEndB},
-		MultiRoutePluginName: "test-multiroute-plugin",
+		MultiRoutePluginName: multiRoutePAdapterFactory,
 	}
 
 	var ms = managedService{
-		Address:      "localhost:23456",
+		Address:      "localhost:23456", //Ignored - we use a testserver with a dyn addr for testing
 		ListenerName: "test listener",
 		Routes:       []route{r1},
 	}

@@ -52,6 +52,60 @@ type guardAndHandler struct {
 	HandlerFn http.HandlerFunc
 }
 
+func makeGHEntryForSingleBackendRoute(r route) guardAndHandler {
+	guardFn := makeGuardFunction(r)
+
+	requestHandler := &requestHandler{
+		Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
+		Backend:   r.Backends[0],
+	}
+
+	handlerFn := requestHandler.toHandlerFunc()
+
+	handler := plugin.WrapHandlerFunc(handlerFn, r.WrapperFactories)
+
+	ghEntry := guardAndHandler{Guard: guardFn, HandlerFn: handler}
+
+	return ghEntry
+}
+
+func makemakeGHEntryForMultipleBackends(r route) guardAndHandler {
+	guardFn := makeGuardFunction(r)
+
+	//Create a backend handler map that will map the backend name to the
+	//wrapped handler for the backend
+	var handlerMap plugin.BackendHandlerMap = make(plugin.BackendHandlerMap)
+
+	//Lookup the factory for the multiroute handler
+	factoryName := r.MultiRoutePluginName
+	factory, err := plugin.LookupMRAFactory(factoryName)
+	if err != nil {
+		panic("Cannot configure service - no such MultiRoutePluginName: " + factoryName)
+	}
+
+	//Go through the backends and build a handler for each
+	for _, backend := range r.Backends {
+		log.Debug("handler for ", backend.Name)
+		requestHandler := &requestHandler{
+			Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
+			Backend:   backend,
+		}
+
+		handlerFn := requestHandler.toHandlerFunc()
+
+		handlerMap[backend.Name] = http.HandlerFunc(handlerFn)
+	}
+
+	//Use the factory to create a wrapped handler that can service the requests
+	log.Info("creating handler via factory using", handlerMap)
+	multiRouteHandler := factory(handlerMap)
+
+	//Now wrap the handler function with the plugins.
+	handler := plugin.WrapHandlerFunc(multiRouteHandler.ToHandlerFunc(), r.WrapperFactories)
+
+	return guardAndHandler{Guard: guardFn, HandlerFn: handler}
+}
+
 //Map the routes to a guard and handler pair. The guard function is generated for the URI based on
 //the route MsgProps, and the handler is the request handler wrapped by the plugin chaining.
 func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]guardAndHandler {
@@ -59,53 +113,17 @@ func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]gua
 	for uri, routes := range uriRouteMap {
 		for _, r := range routes {
 			ghEntries := ghMap[uri]
-			guardFn := makeGuardFunction(r)
+
+			var ghEntry guardAndHandler
 
 			if len(r.Backends) == 1 {
-
-				requestHandler := &requestHandler{
-					Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-					Backend:   r.Backends[0],
-				}
-
-				handlerFn := requestHandler.toHandlerFunc()
-
-				handler := plugin.WrapHandlerFunc(handlerFn, r.WrapperFactories)
-
-				ghEntry := guardAndHandler{Guard: guardFn, HandlerFn: handler}
-
-				ghEntries = append(ghEntries, ghEntry)
-				ghMap[uri] = ghEntries
+				ghEntry = makeGHEntryForSingleBackendRoute(r)
 			} else {
-				var handlerMap plugin.BackendHandlerMap = make(plugin.BackendHandlerMap)
-				factoryName := r.MultiRoutePluginName
-				factory, err := plugin.LookupMRAFactory(factoryName)
-				if err != nil {
-					panic("Cannot configure service - no such MultiRoutePluginName: " + factoryName)
-				}
-
-				for _, backend := range r.Backends {
-					log.Debug("handler for ", backend.Name)
-					requestHandler := &requestHandler{
-						Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-						Backend:   backend,
-					}
-
-					handlerFn := requestHandler.toHandlerFunc()
-
-					handlerMap[backend.Name] = http.HandlerFunc(handlerFn)
-				}
-
-				log.Info("creating handler via factory using", handlerMap)
-				multiRouteHandler := factory(handlerMap)
-
-				handler := plugin.WrapHandlerFunc(multiRouteHandler.ToHandlerFunc(), r.WrapperFactories)
-
-				ghEntry := guardAndHandler{Guard: guardFn, HandlerFn: handler}
-
-				ghEntries = append(ghEntries, ghEntry)
-				ghMap[uri] = ghEntries
+				ghEntry = makemakeGHEntryForMultipleBackends(r)
 			}
+
+			ghEntries = append(ghEntries, ghEntry)
+			ghMap[uri] = ghEntries
 		}
 	}
 
