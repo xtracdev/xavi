@@ -28,7 +28,7 @@ func TestMultiRouteConfig(t *testing.T) {
 	assert.Equal(t, 2, len(r.Backends))
 	assert.Equal(t, "be1", r.Backends[0].Name)
 	assert.Equal(t, "be2", r.Backends[1].Name)
-	assert.Equal(t, "test-plugin", r.MultiRoutePluginName)
+	assert.Equal(t, "test-plugin", r.MultiBackendPluginName)
 }
 
 func TestMultiRouteNoBackend(t *testing.T) {

@@ -14,7 +14,8 @@ func TestJSON2Route(t *testing.T) {
 			"uriRoot":"/hello",
 			"backends":["hello-backend","hello-backend2"],
 			"plugins":["plugin1","plugin2","plugin3"],
-			"MsgProps":"SOAPAction:\"foo\""
+			"MsgProps":"SOAPAction:\"foo\"",
+			"MultiBackendAdapter":"multi-backend-adapter"
 		}`
 
 	var r RouteConfig
@@ -35,6 +36,7 @@ func testVerifyRouteRead(r *RouteConfig, t *testing.T) {
 	assert.Equal(t, "plugin2", r.Plugins[1])
 	assert.Equal(t, "plugin3", r.Plugins[2])
 	assert.Equal(t, "SOAPAction:\"foo\"", r.MsgProps)
+	assert.Equal(t, "multi-backend-adapter", r.MultiBackendAdapter)
 }
 
 func TestRouteStoreAndRetrieve(t *testing.T) {
@@ -53,11 +55,12 @@ func TestRouteStoreAndRetrieve(t *testing.T) {
 	//Store
 	var plugins = []string{"plugin1", "plugin2", "plugin3"}
 	r = &RouteConfig{
-		Name:     "route1",
-		URIRoot:  "/hello",
-		Backends: []string{"hello-backend", "hello-backend2"},
-		Plugins:  plugins,
-		MsgProps: "SOAPAction:\"foo\"",
+		Name:                "route1",
+		URIRoot:             "/hello",
+		Backends:            []string{"hello-backend", "hello-backend2"},
+		Plugins:             plugins,
+		MsgProps:            "SOAPAction:\"foo\"",
+		MultiBackendAdapter: "multi-backend-adapter",
 	}
 	err = r.Store(testKVS)
 	assert.Nil(t, err)

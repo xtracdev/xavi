@@ -90,7 +90,7 @@ GOOS=linux GOARCH=386 CGO_ENABLED=0 go build
 Gocov will accumulate coverage recursively, unlike the go test tool which produces coverage for a single
 package.
 
-gocov test $(go list ./... | grep -v /vendor/) |gocov-html > coverage.html
+        gocov test $(go list ./... | grep -v /vendor/) |gocov-html > coverage.html
 
 ### Port Usage - Mac Os X  
 

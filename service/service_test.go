@@ -206,7 +206,7 @@ func makeTestBackends(t *testing.T, testServerURL string, loadBalancerPolicyName
 
 func makeListenerWithMultiRoutesForTest(t *testing.T, loadBalancerPolicyName string) *managedService {
 
-	var bHandler plugin.MultiRouteHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("b stuff"))
 
 		_, ok := m["A"]
@@ -215,21 +215,21 @@ func makeListenerWithMultiRoutesForTest(t *testing.T, loadBalancerPolicyName str
 		}
 	}
 
-	var BMRAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiRouteAdapter {
-		return &plugin.MultiRouteAdapter{
+	var BMRAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiBackendAdapter {
+		return &plugin.MultiBackendAdapter{
 			Ctx:     bhMap,
 			Handler: bHandler,
 		}
 	}
 
-	plugin.RegisterMRAFactory("test-multiroute-plugin", BMRAFactory)
+	plugin.RegisterMultiBackendAdapterFactory("test-multiroute-plugin", BMRAFactory)
 
 	testBackends := makeTestBackends(t, "http://localhost:666", "")
 	var r1 = route{
-		Name:                 "route2",
-		URIRoot:              "/foo2",
-		Backends:             testBackends,
-		MultiRoutePluginName: "test-multiroute-plugin",
+		Name:                   "route2",
+		URIRoot:                "/foo2",
+		Backends:               testBackends,
+		MultiBackendPluginName: "test-multiroute-plugin",
 	}
 
 	var ms = managedService{

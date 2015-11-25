@@ -15,7 +15,7 @@ func handleAStuff(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("a stuff"))
 }
 
-var bHandler MultiRouteHandlerFunc = func(m BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+var bHandler MultiBackendHandlerFunc = func(m BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("b stuff"))
 
 	_, ok := m["A"]
@@ -24,30 +24,30 @@ var bHandler MultiRouteHandlerFunc = func(m BackendHandlerMap, w http.ResponseWr
 	}
 }
 
-func (th *TestMRHandler) MultiRouteServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+func (th *TestMRHandler) MultiBackendServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 	aHandler := bhMap["A"]
 	aHandler.ServeHTTP(w, r)
 }
 
-func BMRAFactory(bhMap BackendHandlerMap) *MultiRouteAdapter {
-	return &MultiRouteAdapter{
+func BMRAFactory(bhMap BackendHandlerMap) *MultiBackendAdapter {
+	return &MultiBackendAdapter{
 		Ctx:     bhMap,
 		Handler: bHandler,
 	}
 }
 
-func ATestMRHandlerFactory(bhMap BackendHandlerMap, mrHandler MultirouteHandler) *MultiRouteAdapter {
-	return &MultiRouteAdapter{
+func ATestMRHandlerFactory(bhMap BackendHandlerMap, mrHandler MultiBackendHandler) *MultiBackendAdapter {
+	return &MultiBackendAdapter{
 		Ctx:     bhMap,
 		Handler: mrHandler,
 	}
 }
 
-func TestMultiRouteHandlerFunc(t *testing.T) {
+func TestMultiBackendHandlerFunc(t *testing.T) {
 	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 
-	adapter := &MultiRouteAdapter{
+	adapter := &MultiBackendAdapter{
 		Ctx:     handlerMap,
 		Handler: bHandler,
 	}
@@ -63,7 +63,7 @@ func TestMultiRouteHandlerFunc(t *testing.T) {
 
 }
 
-func TestMultiRoutePlugin(t *testing.T) {
+func TestMultiBackendAdapter(t *testing.T) {
 
 	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
@@ -79,17 +79,17 @@ func TestMultiRoutePlugin(t *testing.T) {
 	assert.True(t, strings.Contains(string(body), "a stuff"))
 }
 
-func TestMRPluginWithFactory(t *testing.T) {
-	assert.False(t, MRARegistryContains("b-plugin"))
-	var factory MultiRouteAdapterFactory = BMRAFactory
-	RegisterMRAFactory("b-plugin", factory)
-	assert.True(t, MRARegistryContains("b-plugin"))
+func TestMBAWithFactory(t *testing.T) {
+	assert.False(t, MultiBackendAdapterRegistryContains("b-plugin"))
+	var factory MultiBackendAdapterFactory = BMRAFactory
+	RegisterMultiBackendAdapterFactory("b-plugin", factory)
+	assert.True(t, MultiBackendAdapterRegistryContains("b-plugin"))
 
-	registeredAdapters := ListMultirouteAdapters()
+	registeredAdapters := ListMultiBackendAdapters()
 	assert.Equal(t, 1, len(registeredAdapters))
 	assert.Equal(t, "b-plugin", registeredAdapters[0])
 
-	factoryFromReg, err := LookupMRAFactory("b-plugin")
+	factoryFromReg, err := LookupMultiBackendAdapterFactory("b-plugin")
 	assert.Nil(t, err)
 	assert.NotNil(t, factoryFromReg)
 
@@ -131,11 +131,11 @@ func TestWrappedPlugin(t *testing.T) {
 }
 
 func TestEmptyAdapterNameRegistration(t *testing.T) {
-	err := RegisterMRAFactory("", nil)
+	err := RegisterMultiBackendAdapterFactory("", nil)
 	assert.NotNil(t, err)
 }
 
-func TestLookupOfNonRegisteredMRAFactory(t *testing.T) {
-	_, err := LookupMRAFactory("foobar")
+func TestLookupOfNonRegisteredMBAFactory(t *testing.T) {
+	_, err := LookupMultiBackendAdapterFactory("foobar")
 	assert.NotNil(t, err)
 }

@@ -6,29 +6,29 @@ import (
 
 type BackendHandlerMap map[string]http.Handler
 
-type MultirouteHandler interface {
-	MultiRouteServeHTTP(BackendHandlerMap, http.ResponseWriter, *http.Request)
+type MultiBackendHandler interface {
+	MultiBackendServeHTTP(BackendHandlerMap, http.ResponseWriter, *http.Request)
 }
 
-type MultiRouteHandlerFunc func(BackendHandlerMap, http.ResponseWriter, *http.Request)
+type MultiBackendHandlerFunc func(BackendHandlerMap, http.ResponseWriter, *http.Request)
 
-func (h MultiRouteHandlerFunc) MultiRouteServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+func (h MultiBackendHandlerFunc) MultiBackendServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 	h(bhMap, w, r)
 }
 
-type MultiRouteAdapter struct {
+type MultiBackendAdapter struct {
 	Ctx     BackendHandlerMap
-	Handler MultirouteHandler
+	Handler MultiBackendHandler
 }
 
-func (mra *MultiRouteAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mra.Handler.MultiRouteServeHTTP(mra.Ctx, w, r)
+func (mra *MultiBackendAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	mra.Handler.MultiBackendServeHTTP(mra.Ctx, w, r)
 }
 
-func (mra *MultiRouteAdapter) ToHandlerFunc() http.HandlerFunc {
+func (mra *MultiBackendAdapter) ToHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mra.Handler.MultiRouteServeHTTP(mra.Ctx, w, r)
+		mra.Handler.MultiBackendServeHTTP(mra.Ctx, w, r)
 	}
 }
 
-type MultiRouteAdapterFactory func(BackendHandlerMap) *MultiRouteAdapter
+type MultiBackendAdapterFactory func(BackendHandlerMap) *MultiBackendAdapter

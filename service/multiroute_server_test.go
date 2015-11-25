@@ -16,13 +16,13 @@ import (
 )
 
 const (
-	aBackendResponse          = "a backend stuff\n"
-	bBackendResponse          = "b backend stuff\n"
-	bHandlerStuff             = "b stuff\n"
-	backendA                  = "backendA"
-	backendB                  = "backendB"
-	fooURI                    = "/foo"
-	multiRoutePAdapterFactory = "test-multiroute-plugin"
+	aBackendResponse           = "a backend stuff\n"
+	bBackendResponse           = "b backend stuff\n"
+	bHandlerStuff              = "b stuff\n"
+	backendA                   = "backendA"
+	backendB                   = "backendB"
+	fooURI                     = "/foo"
+	multiBackendAdapterFactory = "test-multiroute-plugin"
 )
 
 func handleAStuff(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +36,7 @@ func handleBStuff(w http.ResponseWriter, r *http.Request) {
 func TestMRConfigListener(t *testing.T) {
 	log.SetLevel(log.InfoLevel)
 
-	var bHandler plugin.MultiRouteHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(bHandlerStuff))
 
 		ah := m[backendA]
@@ -50,14 +50,14 @@ func TestMRConfigListener(t *testing.T) {
 		assert.Equal(t, bBackendResponse, br.Body.String())
 	}
 
-	var BMRAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiRouteAdapter {
-		return &plugin.MultiRouteAdapter{
+	var BMBAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiBackendAdapter {
+		return &plugin.MultiBackendAdapter{
 			Ctx:     bhMap,
 			Handler: bHandler,
 		}
 	}
 
-	plugin.RegisterMRAFactory(multiRoutePAdapterFactory, BMRAFactory)
+	plugin.RegisterMultiBackendAdapterFactory(multiBackendAdapterFactory, BMBAFactory)
 
 	AServer := httptest.NewServer(http.HandlerFunc(handleAStuff))
 	BServer := httptest.NewServer(http.HandlerFunc(handleBStuff))
@@ -121,10 +121,10 @@ func mrtBuildListener(urlA string, urlB string) *managedService {
 	backEndB := makeBackend(backendB, serverB)
 
 	var r1 = route{
-		Name:                 "route1",
-		URIRoot:              fooURI,
-		Backends:             []*backend{backEndA, backEndB},
-		MultiRoutePluginName: multiRoutePAdapterFactory,
+		Name:                   "route1",
+		URIRoot:                fooURI,
+		Backends:               []*backend{backEndA, backEndB},
+		MultiBackendPluginName: multiBackendAdapterFactory,
 	}
 
 	var ms = managedService{

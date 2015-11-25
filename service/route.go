@@ -12,12 +12,12 @@ import (
 )
 
 type route struct {
-	Name                 string
-	URIRoot              string
-	Backends             []*backend
-	WrapperFactories     []plugin.WrapperFactory
-	MsgProps             string
-	MultiRoutePluginName string
+	Name                   string
+	URIRoot                string
+	Backends               []*backend
+	WrapperFactories       []plugin.WrapperFactory
+	MsgProps               string
+	MultiBackendPluginName string
 }
 
 func makeRouteNotFoundError(name string) error {
@@ -45,13 +45,13 @@ func buildRoute(name string, kvs kvstore.KVStore) (*route, error) {
 
 	r.URIRoot = routeConfig.URIRoot
 	r.Backends = backends
-	r.MultiRoutePluginName = routeConfig.MultiBackendPlugin
+	r.MultiBackendPluginName = routeConfig.MultiBackendAdapter
 
 	if len(r.Backends) == 0 {
 		return nil, errors.New("No backends configured for route")
 	}
 
-	if len(r.Backends) > 1 && r.MultiRoutePluginName == "" {
+	if len(r.Backends) > 1 && r.MultiBackendPluginName == "" {
 		return nil, errors.New("MultiRoute plugin name must be provided when multiple backends are configured")
 	}
 

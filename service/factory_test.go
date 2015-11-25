@@ -132,12 +132,12 @@ func loadMultiRoute(kvs kvstore.KVStore, t *testing.T) {
 	}
 
 	r := &config.RouteConfig{
-		Name:               "r2",
-		URIRoot:            "/hello",
-		Backends:           []string{"be1", "be2"},
-		Plugins:            []string{"Logging"},
-		MsgProps:           "",
-		MultiBackendPlugin: "test-plugin",
+		Name:                "r2",
+		URIRoot:             "/hello",
+		Backends:            []string{"be1", "be2"},
+		Plugins:             []string{"Logging"},
+		MsgProps:            "",
+		MultiBackendAdapter: "test-plugin",
 	}
 	err = r.Store(kvs)
 	if err != nil {
@@ -154,12 +154,12 @@ func loadRouteWithNoBackends(kvs kvstore.KVStore, t *testing.T) {
 	}
 
 	r := &config.RouteConfig{
-		Name:               "r3",
-		URIRoot:            "/hello",
-		Backends:           []string{},
-		Plugins:            []string{"Logging"},
-		MsgProps:           "",
-		MultiBackendPlugin: "test-plugin",
+		Name:                "r3",
+		URIRoot:             "/hello",
+		Backends:            []string{},
+		Plugins:             []string{"Logging"},
+		MsgProps:            "",
+		MultiBackendAdapter: "test-plugin",
 	}
 	err = r.Store(kvs)
 	if err != nil {

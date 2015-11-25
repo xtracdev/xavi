@@ -2,36 +2,36 @@ package plugin
 
 import "fmt"
 
-var registeredMRAdaptorFactories map[string]MultiRouteAdapterFactory
+var registeredMBAdaptorFactories map[string]MultiBackendAdapterFactory
 
 func init() {
-	registeredMRAdaptorFactories = make(map[string]MultiRouteAdapterFactory)
+	registeredMBAdaptorFactories = make(map[string]MultiBackendAdapterFactory)
 }
 
-func ListMultirouteAdapters() []string {
+func ListMultiBackendAdapters() []string {
 	var adapters []string
-	for key := range registeredMRAdaptorFactories {
+	for key := range registeredMBAdaptorFactories {
 		adapters = append(adapters, key)
 	}
 	return adapters
 }
 
-func MRARegistryContains(name string) bool {
-	_, ok := registeredMRAdaptorFactories[name]
+func MultiBackendAdapterRegistryContains(name string) bool {
+	_, ok := registeredMBAdaptorFactories[name]
 	return ok
 }
 
-func RegisterMRAFactory(name string, factory MultiRouteAdapterFactory) error {
+func RegisterMultiBackendAdapterFactory(name string, factory MultiBackendAdapterFactory) error {
 	if name == "" {
 		return fmt.Errorf("Empty name passed to RegisterMRAFactory")
 	}
 
-	registeredMRAdaptorFactories[name] = factory
+	registeredMBAdaptorFactories[name] = factory
 	return nil
 }
 
-func LookupMRAFactory(name string) (MultiRouteAdapterFactory, error) {
-	factory, ok := registeredMRAdaptorFactories[name]
+func LookupMultiBackendAdapterFactory(name string) (MultiBackendAdapterFactory, error) {
+	factory, ok := registeredMBAdaptorFactories[name]
 	if !ok {
 		return nil, fmt.Errorf("Factory %s not registered", name)
 	}

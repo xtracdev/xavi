@@ -77,8 +77,8 @@ func makemakeGHEntryForMultipleBackends(r route) guardAndHandler {
 	var handlerMap plugin.BackendHandlerMap = make(plugin.BackendHandlerMap)
 
 	//Lookup the factory for the multiroute handler
-	factoryName := r.MultiRoutePluginName
-	factory, err := plugin.LookupMRAFactory(factoryName)
+	factoryName := r.MultiBackendPluginName
+	factory, err := plugin.LookupMultiBackendAdapterFactory(factoryName)
 	if err != nil {
 		panic("Cannot configure service - no such MultiRoutePluginName: " + factoryName)
 	}
