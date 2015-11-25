@@ -44,7 +44,7 @@ func ATestMRHandlerFactory(bhMap BackendHandlerMap, mrHandler MultiBackendHandle
 }
 
 func TestMultiBackendHandlerFunc(t *testing.T) {
-	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
+	var handlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 
 	adapter := &MultiBackendAdapter{
@@ -65,7 +65,7 @@ func TestMultiBackendHandlerFunc(t *testing.T) {
 
 func TestMultiBackendAdapter(t *testing.T) {
 
-	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
+	var handlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
@@ -93,7 +93,7 @@ func TestMBAWithFactory(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, factoryFromReg)
 
-	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
+	var handlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := factoryFromReg(handlerMap)
 
@@ -112,7 +112,7 @@ func TestMBAWithFactory(t *testing.T) {
 func TestWrappedPlugin(t *testing.T) {
 	wrapper := NewAWrapper()
 
-	var handlerMap BackendHandlerMap = make(BackendHandlerMap)
+	var handlerMap = make(BackendHandlerMap)
 	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
