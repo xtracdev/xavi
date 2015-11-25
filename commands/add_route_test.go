@@ -20,9 +20,13 @@ func testMakeAddRoute(faultyStore bool, t *testing.T) (*bytes.Buffer, *AddRoute)
 		KVStore: kvs,
 	}
 
-	//Add the backend the command will validate
+	//Add the backends the command will validate
 	b := &config.BackendConfig{"b1", []string{"s1", "s2", "s3"}, ""}
 	err := b.Store(kvs)
+	assert.Nil(t, err)
+
+	b = &config.BackendConfig{"b2", []string{"s1", "s2", "s3"}, ""}
+	err = b.Store(kvs)
 	assert.Nil(t, err)
 
 	//Enable fault injection after writing the backend def
@@ -38,17 +42,49 @@ func TestAddRoute(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
+	args := []string{"-name", "route1", "-backends", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
 	status := addRoute.Run(args)
 	assert.Equal(t, 0, status)
 	storedBytes, err := addRoute.KVStore.Get("routes/route1")
 	assert.Nil(t, err)
 
 	r := config.JSONToRoute(storedBytes)
-	assert.Equal(t, "b1", r.Backend)
+	assert.Equal(t, 1, len(r.Backends))
+	assert.Equal(t, "b1", r.Backends[0])
 	assert.Equal(t, "route1", r.Name)
 	assert.Equal(t, "/foo", r.URIRoot)
 	assert.Equal(t, "SOAPAction=\"foo\"", r.MsgProps)
+}
+
+func TestAddRouteMultipleBackends(t *testing.T) {
+
+	_, addRoute := testMakeAddRoute(false, t)
+	assert.NotNil(t, addRoute)
+
+	args := []string{"-name", "route2", "-backends", "b1,b2", "-multibackend-adapter", "foo", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
+	status := addRoute.Run(args)
+	assert.Equal(t, 0, status)
+	storedBytes, err := addRoute.KVStore.Get("routes/route2")
+	assert.Nil(t, err)
+
+	r := config.JSONToRoute(storedBytes)
+	assert.Equal(t, 2, len(r.Backends))
+	assert.Equal(t, "b1", r.Backends[0])
+	assert.Equal(t, "b2", r.Backends[1])
+	assert.Equal(t, "route2", r.Name)
+	assert.Equal(t, "foo", r.MultiBackendAdapter)
+	assert.Equal(t, "/foo", r.URIRoot)
+	assert.Equal(t, "SOAPAction=\"foo\"", r.MsgProps)
+}
+
+func TestAddRouteMultipleBackendsNoPlugin(t *testing.T) {
+
+	_, addRoute := testMakeAddRoute(false, t)
+	assert.NotNil(t, addRoute)
+
+	args := []string{"-name", "route2", "-backends", "b1,b2", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
+	status := addRoute.Run(args)
+	assert.Equal(t, 1, status)
 }
 
 func TestAddRouteMissingName(t *testing.T) {
@@ -64,7 +100,7 @@ func TestAddRouteUnregisteredPlugins(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\"", "-plugins", "fooPlugin"}
+	args := []string{"-name", "route1", "-backends", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\"", "-plugins", "fooPlugin"}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }
@@ -73,7 +109,7 @@ func TestAddRouteUnknownBackend(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-name", "route1", "-backend", "unnkown", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
+	args := []string{"-name", "route1", "-backends", "unnkown", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }
@@ -91,7 +127,7 @@ func TestAddRouteMissingBaseURI(t *testing.T) {
 	_, addRoute := testMakeAddRoute(false, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-backend", "b1", "-name", "/foo", "-msgprop", "SOAPAction=\"foo\""}
+	args := []string{"-backends", "b1", "-name", "/foo", "-msgprop", "SOAPAction=\"foo\""}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }
@@ -110,7 +146,7 @@ func TestAddRouteStorageError(t *testing.T) {
 	_, addRoute := testMakeAddRoute(true, t)
 	assert.NotNil(t, addRoute)
 
-	args := []string{"-name", "route1", "-backend", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
+	args := []string{"-name", "route1", "-backends", "b1", "-base-uri", "/foo", "-msgprop", "SOAPAction=\"foo\""}
 	status := addRoute.Run(args)
 	assert.Equal(t, 1, status)
 }

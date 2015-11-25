@@ -74,7 +74,7 @@ func fireUpPProf() bool {
 		return false
 	}
 
-	log.Info("Attempting to start pprof litener on  ", pprofEndpoint)
+	log.Info("Attempting to start pprof listener on  ", pprofEndpoint)
 
 	go func() {
 		log.Println(http.ListenAndServe(pprofEndpoint, nil))

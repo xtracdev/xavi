@@ -24,7 +24,21 @@ func instantiateLoadBalancer(policyName string, backendName string, servers []co
 	return factory.NewLoadBalancer(backendName, servers)
 }
 
-func buildBackend(name string, kvs kvstore.KVStore) (*backend, error) {
+func buildBackends(kvs kvstore.KVStore, names []string) ([]*backend, error) {
+	var backends []*backend
+	for _, name := range names {
+		be, err := buildBackend(kvs, name)
+		if err != nil {
+			return nil, err
+		}
+
+		backends = append(backends, be)
+	}
+
+	return backends, nil
+}
+
+func buildBackend(kvs kvstore.KVStore, name string) (*backend, error) {
 	var b backend
 
 	log.Info("Building backend " + name)

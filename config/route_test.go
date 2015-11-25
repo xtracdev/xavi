@@ -12,9 +12,10 @@ func TestJSON2Route(t *testing.T) {
 		{
 			"name":"route1",
 			"uriRoot":"/hello",
-			"backend":"hello-backend",	
+			"backends":["hello-backend","hello-backend2"],
 			"plugins":["plugin1","plugin2","plugin3"],
-			"MsgProps":"SOAPAction:\"foo\""
+			"MsgProps":"SOAPAction:\"foo\"",
+			"MultiBackendAdapter":"multi-backend-adapter"
 		}`
 
 	var r RouteConfig
@@ -27,12 +28,15 @@ func TestJSON2Route(t *testing.T) {
 func testVerifyRouteRead(r *RouteConfig, t *testing.T) {
 	assert.Equal(t, "route1", r.Name)
 	assert.Equal(t, "/hello", r.URIRoot)
-	assert.Equal(t, "hello-backend", r.Backend)
+	assert.Equal(t, 2, len(r.Backends))
+	assert.Equal(t, "hello-backend", r.Backends[0])
+	assert.Equal(t, "hello-backend2", r.Backends[1])
 	assert.Equal(t, 3, len(r.Plugins))
 	assert.Equal(t, "plugin1", r.Plugins[0])
 	assert.Equal(t, "plugin2", r.Plugins[1])
 	assert.Equal(t, "plugin3", r.Plugins[2])
 	assert.Equal(t, "SOAPAction:\"foo\"", r.MsgProps)
+	assert.Equal(t, "multi-backend-adapter", r.MultiBackendAdapter)
 }
 
 func TestRouteStoreAndRetrieve(t *testing.T) {
@@ -50,7 +54,14 @@ func TestRouteStoreAndRetrieve(t *testing.T) {
 
 	//Store
 	var plugins = []string{"plugin1", "plugin2", "plugin3"}
-	r = &RouteConfig{"route1", "/hello", "hello-backend", plugins, "SOAPAction:\"foo\""}
+	r = &RouteConfig{
+		Name:                "route1",
+		URIRoot:             "/hello",
+		Backends:            []string{"hello-backend", "hello-backend2"},
+		Plugins:             plugins,
+		MsgProps:            "SOAPAction:\"foo\"",
+		MultiBackendAdapter: "multi-backend-adapter",
+	}
 	err = r.Store(testKVS)
 	assert.Nil(t, err)
 

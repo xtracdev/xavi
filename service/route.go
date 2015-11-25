@@ -12,11 +12,12 @@ import (
 )
 
 type route struct {
-	Name             string
-	URIRoot          string
-	Backend          *backend
-	WrapperFactories []plugin.WrapperFactory
-	MsgProps         string
+	Name                   string
+	URIRoot                string
+	Backends               []*backend
+	WrapperFactories       []plugin.WrapperFactory
+	MsgProps               string
+	MultiBackendPluginName string
 }
 
 func makeRouteNotFoundError(name string) error {
@@ -37,13 +38,22 @@ func buildRoute(name string, kvs kvstore.KVStore) (*route, error) {
 		return nil, makeRouteNotFoundError(name)
 	}
 
-	backend, err := buildBackend(routeConfig.Backend, kvs)
+	backends, err := buildBackends(kvs, routeConfig.Backends)
 	if err != nil {
 		return nil, err
 	}
 
 	r.URIRoot = routeConfig.URIRoot
-	r.Backend = backend
+	r.Backends = backends
+	r.MultiBackendPluginName = routeConfig.MultiBackendAdapter
+
+	if len(r.Backends) == 0 {
+		return nil, errors.New("No backends configured for route")
+	}
+
+	if len(r.Backends) > 1 && r.MultiBackendPluginName == "" {
+		return nil, errors.New("MultiRoute plugin name must be provided when multiple backends are configured")
+	}
 
 	for _, pluginName := range routeConfig.Plugins {
 		factory, err := plugin.LookupWrapperFactory(pluginName)
@@ -65,6 +75,9 @@ func (r route) String() string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("Route: %s\n", r.Name))
 	buffer.WriteString(fmt.Sprintf("\tUri root: %s\n", r.URIRoot))
-	buffer.WriteString(fmt.Sprintf("\tBackend: %s\n", r.Backend))
+	buffer.WriteString(fmt.Sprintf("\tBackends:\n"))
+	for _, be := range r.Backends {
+		buffer.WriteString(fmt.Sprintf("\tBackend: %s\n", be))
+	}
 	return buffer.String()
 }

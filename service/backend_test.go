@@ -7,7 +7,7 @@ import (
 
 func TestGetConnectAddress(t *testing.T) {
 	var testKVS = initKVStore(t)
-	backend, err := buildBackend("hello-backend", testKVS)
+	backend, err := buildBackend(testKVS, "hello-backend")
 	assert.Nil(t, err)
 	assert.NotNil(t, backend)
 
@@ -23,6 +23,6 @@ func TestGetConnectAddress(t *testing.T) {
 
 func TestBuildBackendWithUnknownName(t *testing.T) {
 	var testKVS = initKVStore(t)
-	_, err := buildBackend("no such backend", testKVS)
+	_, err := buildBackend(testKVS, "no such backend")
 	assert.NotNil(t, err)
 }

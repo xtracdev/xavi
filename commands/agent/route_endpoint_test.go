@@ -38,7 +38,7 @@ func TestRoutePutMissingResource(t *testing.T) {
 	defer ts.Close()
 
 	testPayload := `
-	{"Name":"test-route","URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}
+	{"Name":"test-route","URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MultiBackendAdapter":"","MsgProps":""}
 	`
 
 	testURL := fmt.Sprintf("%s/v1/routes/", ts.URL)
@@ -55,7 +55,7 @@ func TestRoutePutMalformedBody(t *testing.T) {
 	defer ts.Close()
 
 	testPayload := `
-	{"Name":"test-route","URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""
+	{"Name":"test-route","URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MultiBackendAdapter":"","MsgProps":""
 	`
 
 	testURL := fmt.Sprintf("%s/v1/routes/test-route", ts.URL)
@@ -75,7 +75,7 @@ func TestRoutePutWIthKVSFault(t *testing.T) {
 	defer testKVStore.ClearFaults()
 
 	testPayload := `
-	{"Name":"test-route","URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}
+	{"Name":"test-route","URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MultiBackendAdapter":"","MsgProps":""}
 	`
 
 	testURL := fmt.Sprintf("%s/v1/routes/test-route", ts.URL)
@@ -92,7 +92,7 @@ func TestRoutePut(t *testing.T) {
 	defer ts.Close()
 
 	testPayload := `
-	{"Name":"test-route","URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}
+	{"Name":"test-route","URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MultiBackendAdapter":"","MsgProps":""}
 	`
 
 	testURL := fmt.Sprintf("%s/v1/routes/test-route", ts.URL)
@@ -118,7 +118,7 @@ func TestRouteGet(t *testing.T) {
 	res.Body.Close()
 	assert.Nil(t, err)
 
-	expected := `{"Name":"test-route","URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}`
+	expected := `{"Name":"test-route","URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MultiBackendAdapter":"","MsgProps":""}`
 
 	responseString := string(rs)
 	assert.Equal(t, expected, responseString)
@@ -163,7 +163,7 @@ func TestRouteGetList(t *testing.T) {
 	res.Body.Close()
 	assert.Nil(t, err)
 
-	expected := `[{"Name":"test-route","URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}]`
+	expected := `[{"Name":"test-route","URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MultiBackendAdapter":"","MsgProps":""}]`
 
 	responseString := string(rs)
 	assert.Equal(t, expected, responseString)
