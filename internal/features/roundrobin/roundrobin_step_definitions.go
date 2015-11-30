@@ -22,7 +22,7 @@ func init() {
 		hello1Server = `{"Address":"localhost","Port":3000,"PingURI":"/hello"}`
 		hello2Server = `{"Address":"localhost","Port":3100,"PingURI":"/hello"}`
 		backend      = `{"ServerNames":["hello1","hello2"],"LoadBalancerPolicy":"round-robin"}`
-		route        = `{"URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}`
+		route        = `{"URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MsgProps":""}`
 		listener     = `{"RouteNames":["demo-route"]}`
 	)
 

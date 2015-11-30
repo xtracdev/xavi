@@ -44,7 +44,7 @@ func init() {
 		prefLocalServer1 = `{"Address":"localhost","Port":3001,"PingURI":"/hello"}`
 		prefLocalServer2 = `{"Address":"mbhost","Port":3001,"PingURI":"/hello"}`
 		backend          = `{"ServerNames":["local-hello","remote-hello"],"LoadBalancerPolicy":"prefer-local"}`
-		route            = `{"URIRoot":"/hello2","Backend":"pref-local-backend","Plugins":null,"MsgProps":""}`
+		route            = `{"URIRoot":"/hello2","Backends":["pref-local-backend"],"Plugins":null,"MsgProps":""}`
 		listener         = `{"RouteNames":["pref-local-route"]}`
 	)
 
@@ -172,7 +172,6 @@ func init() {
 
 		log.Info("updated server 1 request count", latestServer1Count)
 		log.Info("update server 2 request count", latestServer2Count)
-
 
 		assert.Equal(T, server1RequestCount+4, latestServer1Count)
 		assert.Equal(T, server2RequestCount, latestServer2Count)

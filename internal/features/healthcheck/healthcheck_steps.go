@@ -24,7 +24,7 @@ func init() {
 		hello2Server = `{"Address":"localhost","Port":3100,"PingURI":"/hello","HealthCheck":"http-get",
 							"HealthCheckInterval":200,"HealthCheckTimeout":150}`
 		backend  = `{"ServerNames":["hello1","hello2"],"LoadBalancerPolicy":"round-robin"}`
-		route    = `{"URIRoot":"/hello","Backend":"demo-backend","Plugins":null,"MsgProps":""}`
+		route    = `{"URIRoot":"/hello","Backends":["demo-backend"],"Plugins":null,"MsgProps":""}`
 		listener = `{"RouteNames":["demo-route"]}`
 	)
 
