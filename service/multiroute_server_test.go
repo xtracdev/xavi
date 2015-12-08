@@ -67,7 +67,7 @@ func TestMRConfigListener(t *testing.T) {
 
 	ms := mrtBuildListener(AServer.URL, BServer.URL)
 
-	uriToRoutesMap := ms.mapUrisToRoutes()
+	uriToRoutesMap := ms.organizeRoutesByUri()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriToRoutesMap)
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 

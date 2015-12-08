@@ -393,7 +393,7 @@ func validateURIHandlerMap(handlers map[string]http.Handler, t *testing.T) {
 
 func TestMakeOfHandlersFromConfig(t *testing.T) {
 	ms := makeListenerWithRoutesForTest(t, "")
-	uriRoutesMap := ms.mapUrisToRoutes()
+	uriRoutesMap := ms.organizeRoutesByUri()
 	validateURIRoutesMap(uriRoutesMap, t)
 
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
@@ -406,7 +406,7 @@ func TestMakeOfHandlersFromConfig(t *testing.T) {
 
 func TestMakeOfHandlersFromMultiRouteConfig(t *testing.T) {
 	ms := makeListenerWithMultiRoutesForTest(t, "")
-	uriRoutesMap := ms.mapUrisToRoutes()
+	uriRoutesMap := ms.organizeRoutesByUri()
 
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
 
@@ -418,7 +418,7 @@ func TestMakeOfHandlersFromMultiRouteConfig(t *testing.T) {
 
 func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 	ms := makeListenerWithBrokenMsgPropForTest(t)
-	uriRoutesMap := ms.mapUrisToRoutes()
+	uriRoutesMap := ms.organizeRoutesByUri()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
@@ -439,7 +439,7 @@ func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 func TestPanicGuardConfig(t *testing.T) {
 	ms := makePanickyServiceConfig(t)
 	assert.Panics(t, func() {
-		ms.mapUrisToRoutes()
+		ms.organizeRoutesByUri()
 	})
 }
 

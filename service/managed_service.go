@@ -19,7 +19,7 @@ type managedService struct {
 
 //Collect the routes based on URI. A single URI may have multiple routes, but all but one route must
 //have a guard condition expressed via MsgProps on the route definition.
-func (ms *managedService) mapUrisToRoutes() map[string][]route {
+func (ms *managedService) organizeRoutesByUri() map[string][]route {
 	urimap := make(map[string][]route)
 	for _, route := range ms.Routes {
 		uriEntry := urimap[route.URIRoot]
@@ -41,7 +41,7 @@ func mapsUrisToOrderedRoutes(uriRouteMap map[string][]route) map[string][]route 
 	return orderedMap
 }
 
-//A guard function returns false if the guard condition expresssed by MsgProps for a route
+//A guard function returns false if the guard condition expressed by MsgProps for a route
 //is not satisfied, true otherwise.
 type guardFunction func(req *http.Request) (bool, error)
 
@@ -69,7 +69,7 @@ func makeGHEntryForSingleBackendRoute(r route) guardAndHandler {
 	return ghEntry
 }
 
-func makemakeGHEntryForMultipleBackends(r route) guardAndHandler {
+func makeGHEntryForMultipleBackends(r route) guardAndHandler {
 	guardFn := makeGuardFunction(r)
 
 	//Create a backend handler map that will map the backend name to the
@@ -119,7 +119,7 @@ func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]gua
 			if len(r.Backends) == 1 {
 				ghEntry = makeGHEntryForSingleBackendRoute(r)
 			} else {
-				ghEntry = makemakeGHEntryForMultipleBackends(r)
+				ghEntry = makeGHEntryForMultipleBackends(r)
 			}
 
 			ghEntries = append(ghEntries, ghEntry)
@@ -218,15 +218,19 @@ func orderRoutes(routes []route) []route {
 	return append(guarded, unguarded...)
 }
 
-//Run starts up a listener hosting the configuration assocaited with the managed service instance.
+func (ms *managedService) mapUrisToRoutes() map[string]http.Handler {
+	log.Debug("Arranging routes by uri and generating handlers")
+	uriToRoutesMap := ms.organizeRoutesByUri()
+	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriToRoutesMap)
+	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
+	return uriHandlerMap
+}
+
+//Run starts up a listener hosting the configuration associated with the managed service instance.
 func (ms *managedService) Run() {
 	mux := http.NewServeMux()
 
-	log.Debug("Arranging routes by uri and generating handlers")
-	uriToRoutesMap := ms.mapUrisToRoutes()
-	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriToRoutesMap)
-	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
-
+	uriHandlerMap := ms.mapUrisToRoutes()
 	for uri, handler := range uriHandlerMap {
 		mux.Handle(uri, handler)
 	}
