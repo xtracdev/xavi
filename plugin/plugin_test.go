@@ -31,7 +31,7 @@ func handleCall(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("handleCall wrote this stuff\n"))
 }
 
-func TestRegisterPlugins(t *testing.T) {
+func TestPluginRegisterPlugins(t *testing.T) {
 
 	err := RegisterWrapperFactory("AWrapper", NewAWrapper)
 	assert.Nil(t, err)
@@ -61,17 +61,17 @@ func TestRegisterPlugins(t *testing.T) {
 	assert.True(t, strings.Contains(string(rs), "A wrapper wrote this"))
 }
 
-func TestRegisterWrapperFactoryWithNoName(t *testing.T) {
+func TestPluginRegisterWrapperFactoryWithNoName(t *testing.T) {
 	err := RegisterWrapperFactory("", NewAWrapper)
 	assert.NotNil(t, err)
 }
 
-func TestLookupUnregisteredWrapperFactory(t *testing.T) {
+func TestPluginLookupUnregisteredWrapperFactory(t *testing.T) {
 	_, err := LookupWrapperFactory("huh?")
 	assert.NotNil(t, err)
 }
 
-func TestWrapHandlerFunc(t *testing.T) {
+func TestPluginWrapHandlerFunc(t *testing.T) {
 	var factories []WrapperFactory
 	factory, err := LookupWrapperFactory("AWrapper")
 	assert.Nil(t, err)
@@ -94,7 +94,7 @@ func TestWrapHandlerFunc(t *testing.T) {
 	assert.True(t, strings.Contains(string(rs), "A wrapper wrote this"))
 }
 
-func TestChainWrappersAroundHandler(t *testing.T) {
+func TestPluginChainWrappersAroundHandler(t *testing.T) {
 	var factories []WrapperFactory
 	factory, err := LookupWrapperFactory("AWrapper")
 	assert.Nil(t, err)
