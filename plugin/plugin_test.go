@@ -46,7 +46,7 @@ func TestRegisterPlugins(t *testing.T) {
 
 	factories = append(factories, factory)
 	assert.Equal(t, 1, len(factories))
-	handler := ChainWrappers(handleCall, factories)
+	handler := WrapHandlerFunc(handleCall, factories)
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
@@ -100,7 +100,7 @@ func TestChainWrappersAroundHandler(t *testing.T) {
 	assert.Nil(t, err)
 	factories = append(factories, factory)
 
-	hf := ChainWrappersAroundHandler(http.HandlerFunc(handleCall), factories)
+	hf := WrapHandlerFunc(http.HandlerFunc(handleCall), factories)
 	assert.NotNil(t, hf)
 
 	ts := httptest.NewServer(hf)
