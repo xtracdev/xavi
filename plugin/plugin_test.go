@@ -2,13 +2,13 @@ package plugin
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 //NewAWrapper instantiates AWrapper
@@ -20,18 +20,18 @@ func NewAWrapper() Wrapper {
 type AWrapper struct{}
 
 //Wrap wraps http.Handlers with A stuff
-func (aw AWrapper) Wrap(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(w, r)
+func (aw AWrapper) Wrap(h ContextHandler) ContextHandler {
+	return ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTPContext(ctx, w, r)
 		w.Write([]byte("A wrapper wrote this\n"))
 	})
 }
 
-func handleCall(w http.ResponseWriter, r *http.Request) {
+func handleCall(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("handleCall wrote this stuff\n"))
 }
 
-func TestRegisterPlugins(t *testing.T) {
+func TestPluginRegisterPlugins(t *testing.T) {
 
 	err := RegisterWrapperFactory("AWrapper", NewAWrapper)
 	assert.Nil(t, err)
@@ -46,8 +46,14 @@ func TestRegisterPlugins(t *testing.T) {
 
 	factories = append(factories, factory)
 	assert.Equal(t, 1, len(factories))
-	handler := ChainWrappers(handleCall, factories)
-	ts := httptest.NewServer(handler)
+	handler := WrapHandlerFunc(handleCall, factories)
+
+	adaptedHandler := &ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: handler,
+	}
+
+	ts := httptest.NewServer(adaptedHandler)
 	defer ts.Close()
 
 	testURL := fmt.Sprintf("%s/foo", ts.URL)
@@ -61,17 +67,17 @@ func TestRegisterPlugins(t *testing.T) {
 	assert.True(t, strings.Contains(string(rs), "A wrapper wrote this"))
 }
 
-func TestRegisterWrapperFactoryWithNoName(t *testing.T) {
+func TestPluginRegisterWrapperFactoryWithNoName(t *testing.T) {
 	err := RegisterWrapperFactory("", NewAWrapper)
 	assert.NotNil(t, err)
 }
 
-func TestLookupUnregisteredWrapperFactory(t *testing.T) {
+func TestPluginLookupUnregisteredWrapperFactory(t *testing.T) {
 	_, err := LookupWrapperFactory("huh?")
 	assert.NotNil(t, err)
 }
 
-func TestWrapHandlerFunc(t *testing.T) {
+func TestPluginWrapHandlerFunc(t *testing.T) {
 	var factories []WrapperFactory
 	factory, err := LookupWrapperFactory("AWrapper")
 	assert.Nil(t, err)
@@ -80,30 +86,12 @@ func TestWrapHandlerFunc(t *testing.T) {
 	hf := WrapHandlerFunc(handleCall, factories)
 	assert.NotNil(t, hf)
 
-	ts := httptest.NewServer(hf)
-	defer ts.Close()
+	adaptedHandler := &ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: hf,
+	}
 
-	testURL := fmt.Sprintf("%s/foo", ts.URL)
-	res, err := http.Get(testURL)
-	assert.Nil(t, err)
-	assert.Equal(t, 200, res.StatusCode)
-
-	rs, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	assert.Nil(t, err)
-	assert.True(t, strings.Contains(string(rs), "A wrapper wrote this"))
-}
-
-func TestChainWrappersAroundHandler(t *testing.T) {
-	var factories []WrapperFactory
-	factory, err := LookupWrapperFactory("AWrapper")
-	assert.Nil(t, err)
-	factories = append(factories, factory)
-
-	hf := ChainWrappersAroundHandler(http.HandlerFunc(handleCall), factories)
-	assert.NotNil(t, hf)
-
-	ts := httptest.NewServer(hf)
+	ts := httptest.NewServer(adaptedHandler)
 	defer ts.Close()
 
 	testURL := fmt.Sprintf("%s/foo", ts.URL)

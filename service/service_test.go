@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -31,10 +32,10 @@ func makeTestWrapper() plugin.Wrapper {
 
 type testWrapper struct{}
 
-func (aw testWrapper) Wrap(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (aw testWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
+	return plugin.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, r)
+		h.ServeHTTPContext(ctx, rec, r)
 
 		upperOut := strings.ToUpper(string(rec.Body.Bytes()))
 		w.WriteHeader(http.StatusOK)
@@ -85,8 +86,14 @@ func TestPostRequest(t *testing.T) {
 	}
 
 	t.Log("When the echo server is proxied")
-	handlerFn := requestHandler.toHandlerFunc()
-	ts2 := httptest.NewServer(http.HandlerFunc(handlerFn))
+	handlerFn := requestHandler.toContextHandlerFunc()
+
+	adapter := &plugin.ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: plugin.ContextHandlerFunc(handlerFn),
+	}
+
+	ts2 := httptest.NewServer(adapter)
 	defer ts2.Close()
 
 	payload := `
@@ -123,13 +130,18 @@ func TestPostRequestWithPlugin(t *testing.T) {
 		Backend:   backend,
 	}
 
-	handlerFn := requestHandler.toHandlerFunc()
+	handlerFn := requestHandler.toContextHandlerFunc()
 
 	wrapper := makeTestWrapper()
-	wrappedHandler := (wrapper.Wrap(http.HandlerFunc(handlerFn)))
+	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
 
 	t.Log("When the echo server is proxied with a wrapped handler")
-	ts2 := httptest.NewServer(wrappedHandler)
+
+	adapter := &plugin.ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: wrappedHandler,
+	}
+	ts2 := httptest.NewServer(adapter)
 	defer ts2.Close()
 
 	payload := `
@@ -206,7 +218,7 @@ func makeTestBackends(t *testing.T, testServerURL string, loadBalancerPolicyName
 
 func makeListenerWithMultiRoutesForTest(t *testing.T, loadBalancerPolicyName string) *managedService {
 
-	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("b stuff"))
 
 		_, ok := m["A"]
@@ -217,8 +229,8 @@ func makeListenerWithMultiRoutesForTest(t *testing.T, loadBalancerPolicyName str
 
 	var BMRAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiBackendAdapter {
 		return &plugin.MultiBackendAdapter{
-			Ctx:     bhMap,
-			Handler: bHandler,
+			BackendHandlerCtx: bhMap,
+			Handler:           bHandler,
 		}
 	}
 
@@ -361,14 +373,20 @@ func validateURIToGuardAndHandlerMapping(ghMap map[string][]guardAndHandler, t *
 	assert.True(t, match)
 }
 
-func validateURIHandlerMap(handlers map[string]http.Handler, t *testing.T) {
+func validateURIHandlerMap(handlers map[string]plugin.ContextHandler, t *testing.T) {
 	assert.Equal(t, 2, len(handlers))
 	assert.NotNil(t, handlers["/foo"])
 	assert.NotNil(t, handlers["/bar"])
 	assert.Nil(t, handlers["no way, Jose"])
 
 	handler := handlers["/foo"]
-	ts := httptest.NewServer(handler)
+
+	adapter := &plugin.ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: handler,
+	}
+
+	ts := httptest.NewServer(adapter)
 	t.Log("test server url", ts.URL)
 	defer ts.Close()
 
@@ -393,7 +411,7 @@ func validateURIHandlerMap(handlers map[string]http.Handler, t *testing.T) {
 
 func TestMakeOfHandlersFromConfig(t *testing.T) {
 	ms := makeListenerWithRoutesForTest(t, "")
-	uriRoutesMap := ms.mapUrisToRoutes()
+	uriRoutesMap := ms.organizeRoutesByUri()
 	validateURIRoutesMap(uriRoutesMap, t)
 
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
@@ -406,7 +424,7 @@ func TestMakeOfHandlersFromConfig(t *testing.T) {
 
 func TestMakeOfHandlersFromMultiRouteConfig(t *testing.T) {
 	ms := makeListenerWithMultiRoutesForTest(t, "")
-	uriRoutesMap := ms.mapUrisToRoutes()
+	uriRoutesMap := ms.organizeRoutesByUri()
 
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
 
@@ -418,12 +436,18 @@ func TestMakeOfHandlersFromMultiRouteConfig(t *testing.T) {
 
 func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 	ms := makeListenerWithBrokenMsgPropForTest(t)
-	uriRoutesMap := ms.mapUrisToRoutes()
+	uriRoutesMap := ms.organizeRoutesByUri()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriRoutesMap)
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
 	handler := uriHandlerMap["/foo"]
-	ts := httptest.NewServer(handler)
+
+	adapter := &plugin.ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: handler,
+	}
+
+	ts := httptest.NewServer(adapter)
 	t.Log("test server url", ts.URL)
 	defer ts.Close()
 
@@ -439,7 +463,7 @@ func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 func TestPanicGuardConfig(t *testing.T) {
 	ms := makePanickyServiceConfig(t)
 	assert.Panics(t, func() {
-		ms.mapUrisToRoutes()
+		ms.organizeRoutesByUri()
 	})
 }
 

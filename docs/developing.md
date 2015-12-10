@@ -2,9 +2,9 @@
 
 ### Dependency management
 
-Dependencies are managed via [Godep](https://github.com/tools/godep) using golang 1.5 vendoring support. Note the
+Compile dependencies except for golang.org/x/net/context are managed via [Godep](https://github.com/tools/godep) using golang 1.5 vendoring support. Note the
 role of godep is for maintaining the state of the vendor directory; go commands do not need to be
-prefaced with go dep.
+prefaced with go dep. Get the context dependency via `go get golang.org/x/net/context`
 
 Refer to the godep documentation for how to manage dependencies.
 

@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -36,24 +37,24 @@ func handleBStuff(w http.ResponseWriter, r *http.Request) {
 func TestMRConfigListener(t *testing.T) {
 	log.SetLevel(log.InfoLevel)
 
-	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(bHandlerStuff))
 
 		ah := m[backendA]
 		ar := httptest.NewRecorder()
-		ah.ServeHTTP(ar, r)
+		ah.ServeHTTPContext(ctx, ar, r)
 		assert.Equal(t, aBackendResponse, ar.Body.String())
 
 		bh := m[backendB]
 		br := httptest.NewRecorder()
-		bh.ServeHTTP(br, r)
+		bh.ServeHTTPContext(ctx, br, r)
 		assert.Equal(t, bBackendResponse, br.Body.String())
 	}
 
 	var BMBAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiBackendAdapter {
 		return &plugin.MultiBackendAdapter{
-			Ctx:     bhMap,
-			Handler: bHandler,
+			BackendHandlerCtx: bhMap,
+			Handler:           bHandler,
 		}
 	}
 
@@ -67,13 +68,17 @@ func TestMRConfigListener(t *testing.T) {
 
 	ms := mrtBuildListener(AServer.URL, BServer.URL)
 
-	uriToRoutesMap := ms.mapUrisToRoutes()
+	uriToRoutesMap := ms.organizeRoutesByUri()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriToRoutesMap)
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
 	assert.Equal(t, 1, len(uriHandlerMap))
 
-	ls := httptest.NewServer(uriHandlerMap[fooURI])
+	adapter := &plugin.ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: uriHandlerMap[fooURI],
+	}
+	ls := httptest.NewServer(adapter)
 	defer ls.Close()
 
 	resp, err := http.Get(ls.URL + fooURI)
