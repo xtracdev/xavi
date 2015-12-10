@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/statsd"
+	"golang.org/x/net/context"
 	"io"
 	"net/http"
 )
@@ -42,8 +43,8 @@ func incServiceCounter(name string) {
 }
 
 //Create a handler function from a requestHandler
-func (rh *requestHandler) toHandlerFunc() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		st := NewServiceTimer(r)
 
 		r.URL.Scheme = "http"

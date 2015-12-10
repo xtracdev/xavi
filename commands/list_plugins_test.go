@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/plugin"
+	"golang.org/x/net/context"
 	"net/http"
 	"testing"
 )
@@ -19,9 +20,9 @@ func NewAWrapper() plugin.Wrapper {
 type AWrapper struct{}
 
 //Wrap wraps http.Handlers with A stuff
-func (aw AWrapper) Wrap(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(w, r)
+func (aw AWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
+	return plugin.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTPContext(ctx, w, r)
 		w.Write([]byte("A wrapper wrote this\n"))
 	})
 }

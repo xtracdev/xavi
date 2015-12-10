@@ -1,11 +1,12 @@
 package plugin
 
 import (
-	"net/http"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-"testing"
+	"net/http"
 	"net/http/httptest"
-	"github.com/stretchr/testify/assert")
+	"testing"
+)
 
 const requestIDKey = -1
 

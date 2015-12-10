@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,46 +12,75 @@ import (
 
 type TestMRHandler struct{}
 
-func handleAStuff(w http.ResponseWriter, r *http.Request) {
+const testCtxKey = 100
+
+func handleAStuff(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("a stuff"))
+
+	val, ok := ctx.Value(testCtxKey).(string)
+	if ok {
+		w.Write([]byte(val))
+	}
 }
 
-var bHandler MultiBackendHandlerFunc = func(m BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+var bHandler MultiBackendHandlerFunc = func(m BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("b stuff"))
 
 	_, ok := m["A"]
 	if ok == true {
-		w.Write([]byte("context stuff"))
+		w.Write([]byte("backend context A"))
+	}
+
+	val, ok := ctx.Value(testCtxKey).(string)
+	if ok {
+		w.Write([]byte(val))
 	}
 }
 
-func (th *TestMRHandler) MultiBackendServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+func (th *TestMRHandler) MultiBackendServeHTTP(bhMap BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	aHandler := bhMap["A"]
-	aHandler.ServeHTTP(w, r)
+	aHandler.ServeHTTPContext(ctx, w, r)
 }
 
 func BMRAFactory(bhMap BackendHandlerMap) *MultiBackendAdapter {
 	return &MultiBackendAdapter{
-		Ctx:     bhMap,
-		Handler: bHandler,
+		BackendHandlerCtx: bhMap,
+		Ctx:               context.Background(),
+		Handler:           bHandler,
 	}
 }
 
 func ATestMRHandlerFactory(bhMap BackendHandlerMap, mrHandler MultiBackendHandler) *MultiBackendAdapter {
-	return &MultiBackendAdapter{
-		Ctx:     bhMap,
-		Handler: mrHandler,
+	adapter := &MultiBackendAdapter{
+		BackendHandlerCtx: bhMap,
+		Ctx:               context.Background(),
+		Handler:           mrHandler,
 	}
+
+	adapter.Ctx = context.WithValue(adapter.Ctx, testCtxKey, "foo")
+
+	return adapter
+
+}
+
+func adaptAWithFooContext() *MultiBackendAdapter {
+	var handlerMap = make(BackendHandlerMap)
+	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+
+	adapter := &MultiBackendAdapter{
+		BackendHandlerCtx: handlerMap,
+		Ctx:               context.Background(),
+		Handler:           bHandler,
+	}
+
+	adapter.Ctx = context.WithValue(adapter.Ctx, testCtxKey, "foo")
+
+	return adapter
 }
 
 func TestMultiBackendHandlerFunc(t *testing.T) {
-	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 
-	adapter := &MultiBackendAdapter{
-		Ctx:     handlerMap,
-		Handler: bHandler,
-	}
+	adapter := adaptAWithFooContext()
 
 	ts := httptest.NewServer(adapter)
 	defer ts.Close()
@@ -66,7 +96,7 @@ func TestMultiBackendHandlerFunc(t *testing.T) {
 func TestMultiBackendAdapter(t *testing.T) {
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = http.HandlerFunc(handleAStuff)
+	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
 	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
 	ts := httptest.NewServer(adapter)
@@ -94,7 +124,7 @@ func TestMBAWithFactory(t *testing.T) {
 	assert.NotNil(t, factoryFromReg)
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = http.HandlerFunc(handleAStuff)
+	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
 	adapter := factoryFromReg(handlerMap)
 
 	ts := httptest.NewServer(adapter)
@@ -104,8 +134,9 @@ func TestMBAWithFactory(t *testing.T) {
 	assert.Nil(t, err)
 	body, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
+	println("--->", string(body))
 	assert.True(t, strings.Contains(string(body), "b stuff"))
-	assert.True(t, strings.Contains(string(body), "context stuff"))
+	assert.True(t, strings.Contains(string(body), "backend context A"))
 
 }
 
@@ -113,12 +144,16 @@ func TestWrappedPlugin(t *testing.T) {
 	wrapper := NewAWrapper()
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = http.HandlerFunc(handleAStuff)
+	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
 	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
 	wrapped := wrapper.Wrap(adapter)
 
-	ts := httptest.NewServer(wrapped)
+	ctxAdapter := &ContextAdapter{
+		Ctx:     context.Background(),
+		Handler: wrapped,
+	}
+	ts := httptest.NewServer(ctxAdapter)
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL)
