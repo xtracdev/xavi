@@ -25,7 +25,11 @@ func JSONToRoute(bytes []byte) *RouteConfig {
 	}
 
 	r = new(RouteConfig)
-	json.Unmarshal(bytes, r)
+	if err := json.Unmarshal(bytes, r); err != nil {
+		log.Warn("Error unmarshalling RouteConfig: ", err.Error())
+		r = nil
+	}
+
 	return r
 }
 

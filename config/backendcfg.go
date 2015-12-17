@@ -22,7 +22,11 @@ func JSONToBackend(bytes []byte) *BackendConfig {
 	}
 
 	b = new(BackendConfig)
-	json.Unmarshal(bytes, b)
+	if err := json.Unmarshal(bytes, b); err != nil {
+		log.Warn("Error unmarshalling BackendConfig:", err.Error())
+		b = nil
+	}
+
 	return b
 }
 

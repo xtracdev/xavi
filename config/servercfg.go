@@ -26,7 +26,10 @@ func JSONToServer(bytes []byte) *ServerConfig {
 	}
 
 	s = new(ServerConfig)
-	json.Unmarshal(bytes, s)
+	if err := json.Unmarshal(bytes, s); err != nil {
+		log.Warn("Error unmarshalling ServerConfig:", err.Error())
+		s = nil
+	}
 	return s
 }
 
