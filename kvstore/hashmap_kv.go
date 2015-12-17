@@ -152,6 +152,10 @@ func (hkvs *HashKVStore) LoadFromFile() error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.Split(line, "#")
+		if len(parts) != 2 {
+			log.Info("Line did not split into two parts - skipping: ", line)
+			continue
+		}
 		loadedMap[parts[0]] = []byte(parts[1])
 	}
 	if err := scanner.Err(); err != nil {
