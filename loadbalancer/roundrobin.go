@@ -62,6 +62,7 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 	var address string
 	roundRobinLoadBalancerMutex.Lock()
 	log.Debug("Looking through ", rr.servers.Len(), " for connect address")
+	var poolConfigError error
 	for i := 0; i < rr.servers.Len(); i++ {
 		s := rr.servers.Value
 		rr.servers = rr.servers.Next()
@@ -72,14 +73,20 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 				break
 			}
 		} else {
-			panic("Non-LoadBalancingEndpoint in round robin router endpoint collection")
+			log.Error("Round robin load balancer misconfiguration: non round robin load balancer in round robin pool")
+			poolConfigError = fmt.Errorf("Pool configuration error")
 		}
 	}
 	roundRobinLoadBalancerMutex.Unlock()
 
+	if poolConfigError != nil {
+		return "", poolConfigError
+	}
+
 	if address == "" {
 		return "", fmt.Errorf("All servers in backend %s are marked down", rr.backend)
 	}
+
 	return address, nil
 }
 

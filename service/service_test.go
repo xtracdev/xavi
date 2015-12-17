@@ -476,17 +476,11 @@ func TestConnectErrorLogDoesNotPanic(t *testing.T) {
 	}
 }
 
-func TestConnectErrorPanicsOnNilError(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		}
-	}()
-
+func TestConnectErrorLogDoesNotPanicOnNilError(t *testing.T) {
 	req, err := http.NewRequest("GET", "/surething", nil)
 	if assert.Nil(t, err) {
 		st := NewServiceTimer(req)
 		st.ConnectFail(nil)
-		t.Fail()
+		st.EndService(http.StatusServiceUnavailable)
 	}
 }

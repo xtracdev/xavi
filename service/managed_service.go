@@ -81,6 +81,8 @@ func makeGHEntryForMultipleBackends(r route) guardAndHandler {
 	factoryName := r.MultiBackendPluginName
 	factory, err := plugin.LookupMultiBackendAdapterFactory(factoryName)
 	if err != nil {
+		//Note: this panic is at start up/configuration time, and is meant to prevent the startup
+		//of a misconfigured listener.
 		panic("Cannot configure service - no such MultiRoutePluginName: " + factoryName)
 	}
 

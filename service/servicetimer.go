@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"time"
+	"errors"
 )
 
 const (
@@ -58,7 +59,7 @@ func NewServiceTimer(req *http.Request) *ServiceTimer {
 //ConnectFail denotes a failure connecting to a backend
 func (st *ServiceTimer) ConnectFail(err error) {
 	if err == nil {
-		panic("ServiceTimer ConnectFail called with nil error")
+		err = errors.New("Unspecified connect error")
 	}
 	st.err = err
 	st.state = connectPoolError
