@@ -60,7 +60,9 @@ func NewHashKVStore(backingFile string) (*HashKVStore, error) {
 		return nil, err
 	}
 
-	kvStore.LoadFromFile()
+	if err := kvStore.LoadFromFile(); err != nil {
+		return nil, err
+	}
 
 	return kvStore, nil
 
