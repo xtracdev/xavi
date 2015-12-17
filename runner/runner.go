@@ -32,10 +32,7 @@ func setLoggingLevel() {
 		log.SetLevel(log.WarnLevel)
 	case "error":
 		log.SetLevel(log.ErrorLevel)
-	case "fatal":
-		log.SetLevel(log.FatalLevel)
-	case "panic":
-		log.SetLevel(log.PanicLevel)
+		//Note - makes no sense to set the default log levels to fatal or to panic
 	}
 
 	log.Info("log level set: ", log.GetLevel())

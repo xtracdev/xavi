@@ -115,7 +115,6 @@ func (rr *RoundRobinLoadBalancer) changeEndpointStatus(connectAddress string, st
 	}
 
 	var foundIt bool
-
 	for i := 0; i < rr.servers.Len(); i++ {
 		s := rr.servers.Value
 		rr.servers = rr.servers.Next()
@@ -128,7 +127,7 @@ func (rr *RoundRobinLoadBalancer) changeEndpointStatus(connectAddress string, st
 				break
 			}
 		} else {
-			panic("Non-LoadBalancingEndpoint in round robin router endpoint collection")
+			log.Error("Round robin load balancer misconfiguration: non round robin load balancer in round robin pool")
 		}
 	}
 

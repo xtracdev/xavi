@@ -3,10 +3,10 @@ package service
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	"net/http"
 	"time"
-	"errors"
 )
 
 const (

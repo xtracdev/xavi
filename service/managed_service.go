@@ -213,6 +213,7 @@ func orderRoutes(routes []route) []route {
 	}
 
 	if len(unguarded) > 1 {
+		//Boot time panic to prevent misconfigured service from starting
 		panic(fmt.Sprintf("Multiple unguarded routes for uri %s", unguarded[0].URIRoot))
 	}
 
