@@ -146,6 +146,7 @@ func (hkvs *HashKVStore) LoadFromFile() error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	loadedMap := make(map[string][]byte)
 	scanner := bufio.NewScanner(f)
