@@ -72,7 +72,7 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 				break
 			}
 		} else {
-			panic("Non-LoadBalancingEndpoint in round robin router endpoint collection")
+			log.Error("Round robin load balancer misconfiguration: non round robin load balancer in round robin pool")
 		}
 	}
 	roundRobinLoadBalancerMutex.Unlock()
@@ -80,6 +80,7 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 	if address == "" {
 		return "", fmt.Errorf("All servers in backend %s are marked down", rr.backend)
 	}
+
 	return address, nil
 }
 
@@ -108,7 +109,6 @@ func (rr *RoundRobinLoadBalancer) changeEndpointStatus(connectAddress string, st
 	}
 
 	var foundIt bool
-
 	for i := 0; i < rr.servers.Len(); i++ {
 		s := rr.servers.Value
 		rr.servers = rr.servers.Next()
@@ -121,7 +121,7 @@ func (rr *RoundRobinLoadBalancer) changeEndpointStatus(connectAddress string, st
 				break
 			}
 		} else {
-			panic("Non-LoadBalancingEndpoint in round robin router endpoint collection")
+			log.Error("Round robin load balancer misconfiguration: non round robin load balancer in round robin pool")
 		}
 	}
 

@@ -56,14 +56,6 @@ func TestSetLogLevels(t *testing.T) {
 	setLoggingLevel()
 	assert.Equal(t, log.InfoLevel, log.GetLevel())
 
-	os.Setenv(env.LoggingLevel, "fatal")
-	setLoggingLevel()
-	assert.Equal(t, log.FatalLevel, log.GetLevel())
-
-	os.Setenv(env.LoggingLevel, "panic")
-	setLoggingLevel()
-	assert.Equal(t, log.PanicLevel, log.GetLevel())
-
 	os.Setenv(env.LoggingLevel, "")
 	setLoggingLevel()
 	assert.Equal(t, log.InfoLevel, log.GetLevel())

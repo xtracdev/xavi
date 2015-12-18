@@ -65,7 +65,8 @@ func (ps *PingServer) Run(args []string) int {
 		serverDef.PingURI)
 
 	//Ping the server
-	_, err = http.Get(url)
+	resp, err := http.Get(url)
+	defer resp.Body.Close()
 	if err != nil {
 		ps.UI.Error(err.Error())
 		return 1

@@ -21,7 +21,10 @@ func JSONToListener(bytes []byte) *ListenerConfig {
 	}
 
 	l = new(ListenerConfig)
-	json.Unmarshal(bytes, l)
+	if err := json.Unmarshal(bytes, l); err != nil {
+		log.Warn("Error unmarshalling ListenerConfig:", err.Error())
+		l = nil
+	}
 	return l
 }
 
