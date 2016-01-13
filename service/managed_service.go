@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 	"net/http"
 	"strings"
+	"github.com/xtracdev/xavi/plugin/timing"
 )
 
 //Managed service contains the configuration we boot a listener from.
@@ -236,6 +237,7 @@ func (ms *managedService) Run() {
 
 	uriHandlerMap := ms.mapUrisToRoutes()
 	for uri, handler := range uriHandlerMap {
+		handler = timing.RequestTimerMiddleware(handler)
 		adapter := &plugin.ContextAdapter{
 			Ctx:     context.Background(),
 			Handler: handler,
