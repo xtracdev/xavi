@@ -2,28 +2,13 @@ package service
 
 import (
 	"container/list"
-	"expvar"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/armon/go-metrics"
-	"github.com/xtracdev/xavi/statsd"
 	"golang.org/x/net/context"
 	"io"
 	"net/http"
+	"github.com/xtracdev/xavi/plugin/timing"
 )
-
-var (
-	counts = expvar.NewMap("counters")
-)
-
-func counterName(method string, path string) string {
-	return fmt.Sprintf("%s::%s", method, path)
-}
-
-func incCounter(method string, path string) {
-	counter := counterName(method, path)
-	counts.Add(counter, 1)
-}
 
 //Service represents a runnable service
 type Service interface {
@@ -37,23 +22,25 @@ type requestHandler struct {
 	PluginChain *list.List
 }
 
-//Increment service counter
-func incServiceCounter(name string) {
-	metrics.IncrCounter([]string{statsd.FormatServiceName(name)}, 1.0)
-}
-
 //Create a handler function from a requestHandler
 func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		st := NewServiceTimer(r)
+
+		//Record call time contribution
+		rt := timing.TimerFromContext(ctx)
+		if rt == nil {
+			http.Error(w, "No EndToEndTimer found in call context", http.StatusInternalServerError)
+			return
+		}
+
+		timingContributor := rt.StartContributor(rh.Backend.Name + " backend")
 
 		r.URL.Scheme = "http"
 
 		connectString, err := rh.Backend.getConnectAddress()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
-			st.ConnectFail(err)
-			go st.EndService(http.StatusServiceUnavailable)
+			timingContributor.End(err)
 			return
 		}
 
@@ -61,19 +48,14 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		r.URL.Host = connectString
 		r.Host = connectString
 
-		incCounter(r.Method, r.RequestURI)
-
 		log.Debug("invoke backend service")
-		st.BackendCallStart()
+		beTimer := timingContributor.StartServiceCall("backend call " + r.RequestURI)
 		resp, err := rh.Transport.RoundTrip(r)
-		//TODO - timing context wrapper with better timer name support.
-		metrics.MeasureSince([]string{"timing_" + r.RequestURI}, st.backendStartTime)
-		st.BackendCallEnd(err)
+		beTimer.End(err)
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, "Error: %v", err)
-			metrics.IncrCounter([]string{"error_" + r.RequestURI}, 1.0)
-			go st.EndService(http.StatusServiceUnavailable)
+			timingContributor.End(err)
 			return
 		}
 
@@ -91,7 +73,6 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		io.Copy(w, resp.Body)
 		resp.Body.Close()
 
-		go st.EndService(resp.StatusCode)
-		go incServiceCounter(r.URL.String())
+		timingContributor.End(nil)
 	}
 }

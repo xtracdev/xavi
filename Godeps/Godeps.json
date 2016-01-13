@@ -96,6 +96,10 @@
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
 			"Rev": "575fdbe86e5dd89229707ebec0575ce7d088a4a6"
-		}
+		},
+        {
+            "ImportPath": "github.com/x-cray/logrus-prefixed-formatter",
+            "Rev": "19bfe61502ba35a3235b4970c10b9366a0aa9b61"
+        }
 	]
 }

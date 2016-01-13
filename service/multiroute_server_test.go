@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"github.com/xtracdev/xavi/plugin/timing"
 )
 
 const (
@@ -76,7 +77,7 @@ func TestMRConfigListener(t *testing.T) {
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
-		Handler: uriHandlerMap[fooURI],
+		Handler: timing.RequestTimerMiddleware(uriHandlerMap[fooURI]),
 	}
 	ls := httptest.NewServer(adapter)
 	defer ls.Close()

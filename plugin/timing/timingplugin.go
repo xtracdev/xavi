@@ -7,16 +7,30 @@ of the timing is logged on completion of the wrapped call chain.
 package timing
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/timer"
 	"golang.org/x/net/context"
 	"net/http"
+	"time"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	"github.com/Sirupsen/logrus"
 )
 
 type key int
 
 const timerKey key = -22132
+
+
+//Use a separate timer to avoid escaping the JSON timing data - we want it to appear as
+//JSON In the logfile.
+var timerLog = logrus.New()
+
+func init() {
+	pf := new(prefixed.TextFormatter)
+	pf.TimestampFormat = time.RFC3339
+	timerLog.Formatter = pf
+}
+
 
 //NewContextWithTimer adds a new timer to the request context
 func NewContextWithTimer(ctx context.Context, req *http.Request) context.Context {
@@ -49,7 +63,13 @@ func RequestTimerMiddleware(h plugin.ContextHandler) plugin.ContextHandler {
 	})
 }
 
-//Method to log the timing data to standard out.
+//Function to log timing data for later analysis
 func logTiming(t *timer.EndToEndTimer) {
-	log.Info(t.ToJSONString())
+
+	//var log = logrus.New()
+	//log.Out = os.Stderr
+
+	timerLog.WithFields(logrus.Fields{
+		"prefix":"timing-data",
+	},).Info(t.ToJSONString())
 }

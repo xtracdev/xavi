@@ -23,7 +23,7 @@ func TestContributors(t *testing.T) {
 	c1.End(nil)
 	at.Stop(nil)
 
-	if at.Error != nil {
+	if at.Error != "" {
 		t.Fail()
 	}
 
@@ -44,7 +44,7 @@ func TestIfContributorErrorsThenTimerErrors(t *testing.T) {
 	c1.End(nil)
 	at.Stop(nil)
 
-	if at.Error != nil {
+	if at.Error != "" {
 		t.Fail()
 	}
 
@@ -88,7 +88,7 @@ func TestMultiBackendRecordings(t *testing.T) {
 	c1.End(nil)
 	at.Stop(nil)
 
-	if at.Error != nil {
+	if at.Error != "" {
 		t.Fail()
 	}
 

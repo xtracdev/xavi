@@ -14,7 +14,7 @@ import (
 type ServiceCall struct {
 	Name  string
 	Time  time.Duration
-	Error error
+	Error string
 	start time.Time
 }
 
@@ -23,7 +23,7 @@ type Contributor struct {
 	sync.Mutex
 	Name         string
 	Time         time.Duration
-	Error        error
+	Error        string
 	start        time.Time
 	ServiceCalls []*ServiceCall
 }
@@ -36,7 +36,7 @@ type EndToEndTimer struct {
 	Time         time.Duration
 	Contributors []*Contributor
 	ErrorFree    bool
-	Error        error
+	Error        string
 	start        time.Time
 }
 
@@ -54,8 +54,10 @@ func NewEndToEndTimer(name string) *EndToEndTimer {
 //representation of the timing data will reflect if an error occurred during the timing.
 func (t *EndToEndTimer) Stop(err error) {
 	t.Time = time.Now().Sub(t.start)
-	t.Error = err
-	t.ErrorFree = len(t.ContributorErrors()) == 0 && t.Error == nil
+	if err != nil {
+		t.Error = err.Error()
+	}
+	t.ErrorFree = len(t.ContributorErrors()) == 0 && t.Error == ""
 }
 
 //StartContributor creates a Contributor for capturing a sub timing,
@@ -76,10 +78,10 @@ func (t *EndToEndTimer) StartContributor(name string) *Contributor {
 //ContributorErrors produces a slice of all errors that have been
 //reported by the  contributor subtimings associated with an
 //EndToEndTimer
-func (t *EndToEndTimer) ContributorErrors() []error {
-	var errs []error
+func (t *EndToEndTimer) ContributorErrors() []string {
+	var errs []string
 	for _, c := range t.Contributors {
-		if c.Error != nil {
+		if c.Error != "" {
 			errs = append(errs, c.Error)
 		}
 	}
@@ -101,7 +103,9 @@ func (t *EndToEndTimer) ToJSONString() string {
 //pass nil.
 func (c *Contributor) End(err error) {
 	c.Time = time.Now().Sub(c.start)
-	c.Error = err
+	if err != nil {
+		c.Error = err.Error()
+	}
 }
 
 //StartServiceCall create a ServiceCall timer. ServiceCall timers are used to capture
@@ -124,5 +128,7 @@ func (c *Contributor) StartServiceCall(name string) *ServiceCall {
 //End stops the clock for a ServiceCall
 func (sc *ServiceCall) End(err error) {
 	sc.Time = time.Now().Sub(sc.start)
-	sc.Error = err
+	if err != nil {
+		sc.Error = err.Error()
+	}
 }
