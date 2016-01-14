@@ -6,10 +6,10 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
+	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"net/http"
 	"strings"
-	"github.com/xtracdev/xavi/plugin/timing"
 )
 
 //Managed service contains the configuration we boot a listener from.

@@ -4,10 +4,10 @@ import (
 	"container/list"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io"
 	"net/http"
-	"github.com/xtracdev/xavi/plugin/timing"
 )
 
 //Service represents a runnable service

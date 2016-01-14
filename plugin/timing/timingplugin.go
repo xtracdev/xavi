@@ -7,19 +7,23 @@ of the timing is logged on completion of the wrapped call chain.
 package timing
 
 import (
+	"github.com/Sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/timer"
 	"golang.org/x/net/context"
 	"net/http"
 	"time"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-	"github.com/Sirupsen/logrus"
+	"expvar"
+	"github.com/armon/go-metrics"
+	_ "github.com/xtracdev/xavi/statsd"
 )
 
 type key int
 
 const timerKey key = -22132
 
+var counts = expvar.NewMap("counters")
 
 //Use a separate timer to avoid escaping the JSON timing data - we want it to appear as
 //JSON In the logfile.
@@ -30,7 +34,6 @@ func init() {
 	pf.TimestampFormat = time.RFC3339
 	timerLog.Formatter = pf
 }
-
 
 //NewContextWithTimer adds a new timer to the request context
 func NewContextWithTimer(ctx context.Context, req *http.Request) context.Context {
@@ -65,11 +68,33 @@ func RequestTimerMiddleware(h plugin.ContextHandler) plugin.ContextHandler {
 
 //Function to log timing data for later analysis
 func logTiming(t *timer.EndToEndTimer) {
-
-	//var log = logrus.New()
-	//log.Out = os.Stderr
-
 	timerLog.WithFields(logrus.Fields{
-		"prefix":"timing-data",
-	},).Info(t.ToJSONString())
+		"prefix": "timing-data",
+	}).Info(t.ToJSONString())
+
+	go func(t *timer.EndToEndTimer) {
+		updateCounters(t)
+	}(t)
+}
+
+//Function to modify epvar counters
+func updateCounters(t *timer.EndToEndTimer) {
+	if(t.ErrorFree) {
+		counts.Add(t.Name, 1)
+		metrics.IncrCounter([]string{t.Name},1.0)
+		writeTimingsToStatsd(t)
+	} else {
+		counts.Add(t.Name + "-errors", 1)
+	}
+}
+
+//Send timing data to statsd
+func writeTimingsToStatsd(t *timer.EndToEndTimer) {
+	metrics.AddSample([]string{t.Name}, float32(t.Time))
+	for _, c := range t.Contributors {
+		metrics.AddSample([]string{t.Name + ":" + c.Name}, float32(c.Time))
+		for _,sc := range c.ServiceCalls {
+			metrics.AddSample([]string{t.Name + ":" + c.Name + ":" + sc.Name }, float32(sc.Time))
+		}
+	}
 }

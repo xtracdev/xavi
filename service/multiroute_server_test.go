@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
+	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net"
@@ -14,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"github.com/xtracdev/xavi/plugin/timing"
 )
 
 const (
