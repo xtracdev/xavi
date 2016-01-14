@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"github.com/armon/go-metrics/datadog"
 )
 
 
@@ -15,17 +16,53 @@ func init() {
 	initializeFromEnvironmentSettings()
 }
 
+
+func configureStatsD(endpoint string) {
+	namespace := os.Getenv(env.StatsdNamespace)
+	if namespace == "" {
+		namespace = "xavi"
+	}
+
+	useDataDog := os.Getenv(env.UseDataDogStatsD)
+	if useDataDog == "" {
+		log.Info("Using vanilla statsd")
+		configureVanillaStatsD(endpoint, namespace)
+	} else {
+		log.Info("Using datadog statsd implementation")
+		configureDatadogStatsd(endpoint, namespace)
+	}
+}
+
+func configureDatadogStatsd(endpoint string, namespace string) {
+	log.Info("Using datadog statsd client to send telemetry to ", endpoint, " using namespace ", namespace)
+	ddhost := os.Getenv(env.DatadogHost)
+	if ddhost == "" {
+		ddhost = "xavi-host-with-the-most"
+	}
+	sink, err := datadog.NewDogStatsdSink(endpoint, ddhost)
+	if err != nil {
+		log.Warn("Unable to configure statds sink", err.Error())
+		return
+	}
+	metrics.NewGlobal(metrics.DefaultConfig(namespace), sink)
+}
+
+func configureVanillaStatsD(envEndpoint string, namespace string) {
+	log.Info("Using vanilla statsd client to send telemetry to ", envEndpoint)
+	sink, err := metrics.NewStatsdSink(envEndpoint)
+	if err != nil{
+		log.Warn("Unable to configure statds sink", err.Error())
+		return
+	}
+	metrics.NewGlobal(metrics.DefaultConfig(namespace), sink)
+}
+
 func initializeFromEnvironmentSettings() {
+	log.Info("Configuring go metrics sink")
 	envSettings := os.Getenv(env.StatsdEndpoint)
 	if envSettings != "" {
-		log.Info("Using statsd client to send telemetry to ", envSettings)
-		sink, err := metrics.NewStatsdSink(envSettings)
-		if err != nil{
-			log.Warn("Unable to configure statds sink", err.Error())
-			return
-		}
-
-		metrics.NewGlobal(metrics.DefaultConfig("xavi"), sink)
+		log.Info("configure statsd sink")
+		configureStatsD(envSettings)
 	} else {
 		log.Info("Using in memory metrics accumulator - dump via USR1 signal")
 		inm := metrics.NewInmemSink(10*time.Second, 5 * time.Minute)
