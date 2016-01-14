@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/xtracdev/xavi",
-	"GoVersion": "go1.5.1",
+	"GoVersion": "go1.5",
 	"Packages": [
 		"./..."
 	],
@@ -73,6 +73,10 @@
 			"Rev": "e8116c9c66e641e9f81fc0a79fac923dfc646378"
 		},
 		{
+			"ImportPath": "github.com/mgutz/ansi",
+			"Rev": "c286dcecd19ff979eeb73ea444e479b903f2cfcb"
+		},
+		{
 			"ImportPath": "github.com/mitchellh/cli",
 			"Rev": "8102d0ed5ea2709ade1243798785888175f6e415"
 		},
@@ -94,12 +98,16 @@
 			"Rev": "67106a5111a06241c8d84952c33214675f51a34a"
 		},
 		{
+			"ImportPath": "github.com/x-cray/logrus-prefixed-formatter",
+			"Rev": "19bfe61502ba35a3235b4970c10b9366a0aa9b61"
+		},
+		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
 			"Rev": "575fdbe86e5dd89229707ebec0575ce7d088a4a6"
 		},
-        {
-            "ImportPath": "github.com/x-cray/logrus-prefixed-formatter",
-            "Rev": "19bfe61502ba35a3235b4970c10b9366a0aa9b61"
-        }
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "341cd0845b5a19165f12976d7915847a71037135"
+		}
 	]
 }
