@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
+	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net"
@@ -76,7 +77,7 @@ func TestMRConfigListener(t *testing.T) {
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
-		Handler: uriHandlerMap[fooURI],
+		Handler: timing.RequestTimerMiddleware(uriHandlerMap[fooURI]),
 	}
 	ls := httptest.NewServer(adapter)
 	defer ls.Close()

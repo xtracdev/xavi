@@ -6,6 +6,10 @@ const (
 	LoggingOpts    = "XAVI_LOGGING_OPTS"
 	StatsdEndpoint = "XAVI_STATSD_ADDRESS"
 	LoggingLevel   = "XAVI_LOGGING_LEVEL"
+	UseDataDogStatsD = "XAVI_USE_DATADOG_STATSD"
+	StatsdNamespace = "XAVI_STATSD_NAMESPACE"
+	DatadogHost = "XAVI_DDHOST"
+
 )
 
 //Valid LoggingOpts - note that all can be specified in the env var, comma

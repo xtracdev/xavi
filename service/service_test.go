@@ -2,11 +2,11 @@ package service
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
+	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
@@ -90,7 +90,7 @@ func TestPostRequest(t *testing.T) {
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
-		Handler: plugin.ContextHandlerFunc(handlerFn),
+		Handler: timing.RequestTimerMiddleware(plugin.ContextHandlerFunc(handlerFn)),
 	}
 
 	ts2 := httptest.NewServer(adapter)
@@ -134,6 +134,7 @@ func TestPostRequestWithPlugin(t *testing.T) {
 
 	wrapper := makeTestWrapper()
 	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
+	wrappedHandler = timing.RequestTimerMiddleware(wrappedHandler)
 
 	t.Log("When the echo server is proxied with a wrapped handler")
 
@@ -380,6 +381,7 @@ func validateURIHandlerMap(handlers map[string]plugin.ContextHandler, t *testing
 	assert.Nil(t, handlers["no way, Jose"])
 
 	handler := handlers["/foo"]
+	handler = timing.RequestTimerMiddleware(handler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
@@ -441,6 +443,7 @@ func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
 	handler := uriHandlerMap["/foo"]
+	handler = timing.RequestTimerMiddleware(handler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
@@ -465,22 +468,4 @@ func TestPanicGuardConfig(t *testing.T) {
 	assert.Panics(t, func() {
 		ms.organizeRoutesByUri()
 	})
-}
-
-func TestConnectErrorLogDoesNotPanic(t *testing.T) {
-	req, err := http.NewRequest("GET", "/surething", nil)
-	if assert.Nil(t, err) {
-		st := NewServiceTimer(req)
-		st.ConnectFail(errors.New("No connection in the pool, mate"))
-		st.EndService(http.StatusServiceUnavailable)
-	}
-}
-
-func TestConnectErrorLogDoesNotPanicOnNilError(t *testing.T) {
-	req, err := http.NewRequest("GET", "/surething", nil)
-	if assert.Nil(t, err) {
-		st := NewServiceTimer(req)
-		st.ConnectFail(nil)
-		st.EndService(http.StatusServiceUnavailable)
-	}
 }
