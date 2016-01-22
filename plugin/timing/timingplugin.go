@@ -68,6 +68,9 @@ func RequestTimerMiddleware(h plugin.ContextHandler) plugin.ContextHandler {
 
 //Function to log timing data for later analysis
 func logTiming(t *timer.EndToEndTimer) {
+	//We add a timestamp to the JSON to allow indexing in elasticsearch
+	t.LoggingTimestamp = time.Now()
+
 	timerLog.WithFields(logrus.Fields{
 		"prefix": "timing-data",
 	}).Info(t.ToJSONString())
@@ -90,11 +93,11 @@ func updateCounters(t *timer.EndToEndTimer) {
 
 //Send timing data to statsd
 func writeTimingsToStatsd(t *timer.EndToEndTimer) {
-	metrics.AddSample([]string{t.Name}, float32(t.Time))
+	metrics.AddSample([]string{t.Name}, float32(t.Duration))
 	for _, c := range t.Contributors {
-		metrics.AddSample([]string{t.Name + ":" + c.Name}, float32(c.Time))
+		metrics.AddSample([]string{t.Name + ":" + c.Name}, float32(c.Duration))
 		for _,sc := range c.ServiceCalls {
-			metrics.AddSample([]string{t.Name + ":" + c.Name + ":" + sc.Name }, float32(sc.Time))
+			metrics.AddSample([]string{t.Name + ":" + c.Name + ":" + sc.Name }, float32(sc.Duration))
 		}
 	}
 }

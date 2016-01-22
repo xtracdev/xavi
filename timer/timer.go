@@ -8,42 +8,48 @@ import (
 	"encoding/json"
 	"time"
 	"sync"
+	"crypto/rand"
+	"fmt"
 )
 
 //ServiceCall is used to capture a service call made in the context of a Contributor timing.
 type ServiceCall struct {
-	Name  string
-	Time  time.Duration
-	Error string
-	start time.Time
+	Name     string
+	Duration time.Duration
+	Error    string
+	start    time.Time
 }
 
 //Contributor is used to capture sub-timings of note that contribute to the end to end time.
 type Contributor struct {
 	sync.Mutex
 	Name         string
-	Time         time.Duration
+	Duration     time.Duration
 	Error        string
 	start        time.Time
 	ServiceCalls []*ServiceCall
 }
 
 //EndToEndTimer is used to capture an end to end timing. Subtimings can be added to
-//an end to end time using StartContributor.
+//an end to end time using StartContributor. Note logging timestamp is serialized as
+//time so we can have a single logging time index in elasticsearch
 type EndToEndTimer struct {
 	sync.Mutex
-	Name         string
-	Time         time.Duration
-	Contributors []*Contributor
-	ErrorFree    bool
-	Error        string
-	start        time.Time
+	Name             string
+	Duration         time.Duration
+	LoggingTimestamp time.Time `json:"time"`
+	TxnId            string
+	Contributors     []*Contributor
+	ErrorFree        bool
+	Error            string
+	start            time.Time
 }
 
 //NewEndToEndTimer creates a new EndToEndTimer. Note that the clock starts when an
 //EndToEndTimer is created.
 func NewEndToEndTimer(name string) *EndToEndTimer {
 	return &EndToEndTimer{
+		TxnId: makeTxnId(),
 		Name:  name,
 		start: time.Now(),
 	}
@@ -53,7 +59,7 @@ func NewEndToEndTimer(name string) *EndToEndTimer {
 //it should be noted by passing an error object to Stop, otherwise pass nil. The JSON
 //representation of the timing data will reflect if an error occurred during the timing.
 func (t *EndToEndTimer) Stop(err error) {
-	t.Time = time.Now().Sub(t.start)
+	t.Duration = time.Now().Sub(t.start)
 	if err != nil {
 		t.Error = err.Error()
 	}
@@ -102,7 +108,7 @@ func (t *EndToEndTimer) ToJSONString() string {
 //during the contributor should be pass along in the err argument, otherwise
 //pass nil.
 func (c *Contributor) End(err error) {
-	c.Time = time.Now().Sub(c.start)
+	c.Duration = time.Now().Sub(c.start)
 	if err != nil {
 		c.Error = err.Error()
 	}
@@ -127,8 +133,14 @@ func (c *Contributor) StartServiceCall(name string) *ServiceCall {
 
 //End stops the clock for a ServiceCall
 func (sc *ServiceCall) End(err error) {
-	sc.Time = time.Now().Sub(sc.start)
+	sc.Duration = time.Now().Sub(sc.start)
 	if err != nil {
 		sc.Error = err.Error()
 	}
+}
+
+func makeTxnId() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }

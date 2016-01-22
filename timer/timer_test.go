@@ -9,7 +9,7 @@ import (
 func TestPostitiveDuration(t *testing.T) {
 	at := NewEndToEndTimer("foo")
 	at.Stop(nil)
-	if at.Time == 0 {
+	if at.Duration == 0 {
 		t.Fail()
 	}
 
@@ -27,7 +27,7 @@ func TestContributors(t *testing.T) {
 		t.Fail()
 	}
 
-	if c1.Time <= 0 || c2.Time <= 0 {
+	if c1.Duration <= 0 || c2.Duration <= 0 {
 		t.Fail()
 	}
 
@@ -92,7 +92,7 @@ func TestMultiBackendRecordings(t *testing.T) {
 		t.Fail()
 	}
 
-	if c1.Time <= 0 || c2.Time <= 0 || c3.Time <= 0 {
+	if c1.Duration <= 0 || c2.Duration <= 0 || c3.Duration <= 0 {
 		t.Fail()
 	}
 
