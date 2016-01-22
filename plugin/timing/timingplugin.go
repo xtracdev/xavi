@@ -7,8 +7,6 @@ of the timing is logged on completion of the wrapped call chain.
 package timing
 
 import (
-	"github.com/Sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/timer"
 	"golang.org/x/net/context"
@@ -17,6 +15,8 @@ import (
 	"expvar"
 	"github.com/armon/go-metrics"
 	_ "github.com/xtracdev/xavi/statsd"
+	"fmt"
+	"os"
 )
 
 type key int
@@ -25,15 +25,6 @@ const timerKey key = -22132
 
 var counts = expvar.NewMap("counters")
 
-//Use a separate timer to avoid escaping the JSON timing data - we want it to appear as
-//JSON In the logfile.
-var timerLog = logrus.New()
-
-func init() {
-	pf := new(prefixed.TextFormatter)
-	pf.TimestampFormat = time.RFC3339
-	timerLog.Formatter = pf
-}
 
 //NewContextWithTimer adds a new timer to the request context
 func NewContextWithTimer(ctx context.Context, req *http.Request) context.Context {
@@ -71,9 +62,7 @@ func logTiming(t *timer.EndToEndTimer) {
 	//We add a timestamp to the JSON to allow indexing in elasticsearch
 	t.LoggingTimestamp = time.Now()
 
-	timerLog.WithFields(logrus.Fields{
-		"prefix": "timing-data",
-	}).Info(t.ToJSONString())
+	fmt.Fprintln(os.Stderr, t.ToJSONString())
 
 	go func(t *timer.EndToEndTimer) {
 		updateCounters(t)
