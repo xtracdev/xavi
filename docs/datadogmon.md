@@ -20,8 +20,7 @@ ensure both proxy_host and proxy_port are not commented out, and set them to the
 ### Monitoring Hostname
 
 Also in datadog.conf, set host name to the host qualifier you might wish to use for filtering in datadog. Note this 
-value can also be exported as an evironment variable (TODO - does the env var override the conf file value? How
-exactly is this used).
+value can also be exported as an evironment variable. The environment variable value appears to be ignored if set in the agent.
 
 ### Configure DataDog for Statsd Collection
 
@@ -38,7 +37,7 @@ hostname and port in expvar_url to the same values as the listener address for X
 
 To configure Xavi for statsd and expvar monitoring, set the following environment variables:
 
-* XAVI_DDHOST - Set the hostname in the DataDog statsd interface. Analog to hostname in datadog.conf.
+* XAVI_DDHOST - Set the hostname in the DataDog statsd interface. Analog to hostname in datadog.conf. Note the the value in datadog.conf does not get overridden if a different value is set in XAVI_DDHOST.
 * XAVI_STATSD_NAMESPACE - String prepended to metric names emitted from Xavi.
 * XAVI_USE_DATADOG_STATSD - set to 1 when sending statsd data to DataDog
 * XAVI_STATSD_ADDRESS - set to the hostname:port of the statsd agent. If using DataDog statsd, the port component
