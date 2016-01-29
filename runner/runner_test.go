@@ -70,3 +70,24 @@ func TestFireUpPProf(t *testing.T) {
 	fired = fireUpPProf()
 	assert.True(t, fired)
 }
+
+func TestVersionDefault(t *testing.T) {
+	args := []string{"mystuff", "-version"}
+	version, exit := dumpVersionAndExit(args)
+	assert.Equal(t, "mystuff: build version <not specified>", version)
+	assert.True(t, exit)
+}
+
+func TestVersionNonDefault(t *testing.T) {
+	BuildVersion = "666"
+	args := []string{"mycoolapi", "-version"}
+	version, exit := dumpVersionAndExit(args)
+	assert.Equal(t, "mycoolapi: build version 666", version)
+	assert.True(t, exit)
+}
+
+func TestVersionNoExit(t *testing.T) {
+	args := []string{"a", "b"}
+	_, exit := dumpVersionAndExit(args)
+	assert.False(t, exit)
+}
