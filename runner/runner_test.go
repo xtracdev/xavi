@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"strings"
 )
 
 func registerLoggingPlugin() {
@@ -74,7 +75,8 @@ func TestFireUpPProf(t *testing.T) {
 func TestVersionDefault(t *testing.T) {
 	args := []string{"mystuff", "-version"}
 	version, exit := dumpVersionAndExit(args)
-	assert.Equal(t, "mystuff: build version <not specified>", version)
+	assert.True(t, strings.Contains(version, "mystuff: no build version specified"))
+	assert.True(t, strings.Contains(version, "–X –ldflags option"))
 	assert.True(t, exit)
 }
 
