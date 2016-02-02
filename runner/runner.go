@@ -15,6 +15,10 @@ import (
 	"strings"
 )
 
+//Build version is set via the command line, e.g.
+//go build -ldflags "-X github.com/xtracdev/xavi/runner.BuildVersion=20160129.1"
+var BuildVersion string
+
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	setLoggingLevel()
@@ -81,8 +85,33 @@ func fireUpPProf() bool {
 
 }
 
+const versionNotSpecified = `%s%s: no build version specified. A version can be set on the
+command line using the –X –ldflags option, for example
+go build -ldflags "-X github.com/xtracdev/xavi/runner.BuildVersion=20160129.1"`
+
+func dumpVersionAndExit(args []string) (string, bool) {
+	var versionFormat string
+
+	switch BuildVersion {
+	case "":
+		versionFormat = versionNotSpecified
+	default:
+		versionFormat = "%s: build version %s"
+	}
+
+	output := fmt.Sprintf(versionFormat, args[0], BuildVersion)
+	return output, len(args) == 2 && args[1] == "-version"
+}
+
 //Run starts a process delegating to the shell.DoMain function
 func Run(args []string, pluginRegistrationFn func()) {
+	version, exit := dumpVersionAndExit(os.Args)
+	if exit == true {
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
+	log.Info(version)
 	fireUpPProf()
 	kvs := setupXAVIEnvironment(pluginRegistrationFn)
 	os.Exit(shell.DoMain(args, kvs, os.Stdout))
