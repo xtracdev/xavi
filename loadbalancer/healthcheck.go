@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -41,6 +42,13 @@ func healthy(endpoint string) <-chan bool {
 			statusChannel <- false
 			return
 		}
+
+		//Read the entire response and close the body to ensure proper connection hygiene. On the mac you
+		//can use something like lsof | grep xavi|wc -l  (and check/timeout values
+		//of 5000/2000 ms respectively) to see file handles in use - without the close and read the
+		//connections in grow without being released.
+		defer resp.Body.Close()
+		ioutil.ReadAll(resp.Body)
 
 		if resp == nil {
 			log.Warn("nil response from health check endpoint")
