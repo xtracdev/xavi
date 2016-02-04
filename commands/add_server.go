@@ -29,8 +29,8 @@ func (as *AddServer) Help() string {
 		-name Name of server for reference in backend configuration.
 		-ping-uri Uri resource used to assess health via an HTTP GET (e.g. /hello)
 		-health-check Health check type (optional)
-		-health-check-interval (optional) duration in seconds at which health is checked
-		-health-check-timeout (optional) time in seconds for healthcheck timeout
+		-health-check-interval (optional) duration in milliseconds at which health is checked
+		-health-check-timeout (optional) time in killiseconds for healthcheck timeout
 
 	Known health checks:
 	`
