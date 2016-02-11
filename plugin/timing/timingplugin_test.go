@@ -25,6 +25,17 @@ func handleBar(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 	rw.Write([]byte("foo"))
 }
 
+func TestServiceNameContextPresent(t *testing.T) {
+	ctx := context.Background()
+	ctx = AddServiceNameToContext(ctx, "foo")
+	assert.Equal(t, "foo", GetServiceNameFromContext(ctx))
+}
+
+func TestServiceNameContextNotPresent(t *testing.T) {
+	ctx := context.Background()
+	assert.Equal(t, "", GetServiceNameFromContext(ctx))
+}
+
 func TestContextPresent(t *testing.T) {
 	wrapperFactory := logging.NewLoggingWrapper()
 	assert.NotNil(t, wrapperFactory)

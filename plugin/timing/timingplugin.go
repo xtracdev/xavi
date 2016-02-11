@@ -7,29 +7,46 @@ of the timing is logged on completion of the wrapped call chain.
 package timing
 
 import (
+	"expvar"
+	"fmt"
+	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/plugin"
+	_ "github.com/xtracdev/xavi/statsd"
 	"github.com/xtracdev/xavi/timer"
 	"golang.org/x/net/context"
 	"net/http"
-	"time"
-	"expvar"
-	"github.com/armon/go-metrics"
-	_ "github.com/xtracdev/xavi/statsd"
-	"fmt"
 	"os"
+	"time"
 )
 
 type key int
 
 const timerKey key = -22132
+const serviceNameKey key = -22133
 
 var counts = expvar.NewMap("counters")
-
 
 //NewContextWithTimer adds a new timer to the request context
 func NewContextWithTimer(ctx context.Context, req *http.Request) context.Context {
 	timer := timer.NewEndToEndTimer("unspecified timer")
 	return context.WithValue(ctx, timerKey, timer)
+}
+
+//AddServiceNameToContext adds the name of the service the backend handler will invoke. This provides
+//a service name in the output timing log to allow the latency of different backend services to be
+//assessed.
+func AddServiceNameToContext(ctx context.Context, serviceName string) context.Context {
+	return context.WithValue(ctx, serviceNameKey, serviceName)
+}
+
+//GetServiceNameFromContext pulls the service name from the context.
+func GetServiceNameFromContext(ctx context.Context) string {
+	serviceName, ok := ctx.Value(serviceNameKey).(string)
+	if !ok {
+		return ""
+	}
+
+	return serviceName
 }
 
 //TimerFromContext returns an EndToEndTimer from the given context if one
@@ -71,12 +88,12 @@ func logTiming(t *timer.EndToEndTimer) {
 
 //Function to modify epvar counters
 func updateCounters(t *timer.EndToEndTimer) {
-	if(t.ErrorFree) {
+	if t.ErrorFree {
 		counts.Add(t.Name, 1)
-		metrics.IncrCounter([]string{t.Name},1.0)
+		metrics.IncrCounter([]string{t.Name}, 1.0)
 		writeTimingsToStatsd(t)
 	} else {
-		counts.Add(t.Name + "-errors", 1)
+		counts.Add(t.Name+"-errors", 1)
 	}
 }
 
@@ -85,8 +102,8 @@ func writeTimingsToStatsd(t *timer.EndToEndTimer) {
 	metrics.AddSample([]string{t.Name}, float32(t.Duration))
 	for _, c := range t.Contributors {
 		metrics.AddSample([]string{t.Name + ":" + c.Name}, float32(c.Duration))
-		for _,sc := range c.ServiceCalls {
-			metrics.AddSample([]string{t.Name + ":" + c.Name + ":" + sc.Name }, float32(sc.Duration))
+		for _, sc := range c.ServiceCalls {
+			metrics.AddSample([]string{t.Name + ":" + c.Name + ":" + sc.Name}, float32(sc.Duration))
 		}
 	}
 }
