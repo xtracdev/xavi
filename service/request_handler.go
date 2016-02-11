@@ -49,7 +49,12 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		r.Host = connectString
 
 		log.Debug("invoke backend service")
-		beTimer := timingContributor.StartServiceCall("backend call " + connectString)
+		serviceName := timing.GetServiceNameFromContext(ctx)
+		if serviceName == "" {
+			serviceName = "backend-call"
+		}
+
+		beTimer := timingContributor.StartServiceCall(serviceName + " " + connectString)
 		resp, err := rh.Transport.RoundTrip(r)
 		beTimer.End(err)
 		if err != nil {
