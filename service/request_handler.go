@@ -27,7 +27,7 @@ func backendName(name string) string {
 	if strings.Contains(name, "backend") {
 		return name
 	} else {
-		return name + "^backend"
+		return name + "-backend"
 	}
 }
 
