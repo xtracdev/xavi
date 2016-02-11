@@ -1,20 +1,21 @@
 /*
 Package timer implements a simple timing utility that can be used to capture
 end to end timings, plus any subtimings of interests.
- */
+*/
 package timer
 
 import (
-	"encoding/json"
-	"time"
-	"sync"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
 )
 
 //ServiceCall is used to capture a service call made in the context of a Contributor timing.
 type ServiceCall struct {
 	Name     string
+	Endpoint string
 	Duration time.Duration
 	Error    string
 	start    time.Time
@@ -118,10 +119,11 @@ func (c *Contributor) End(err error) {
 //the times of calls to services/backends made within a Contributor timing. Note that
 //while an error can be denoted when ending the call, it is not assumed an error
 //in a call to a service causes the end to end timing to fail.
-func (c *Contributor) StartServiceCall(name string) *ServiceCall {
+func (c *Contributor) StartServiceCall(name string, endpoint string) *ServiceCall {
 	svcCall := &ServiceCall{
-		start: time.Now(),
-		Name:  name,
+		start:    time.Now(),
+		Name:     name,
+		Endpoint: endpoint,
 	}
 
 	c.Lock()
