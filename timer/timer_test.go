@@ -2,8 +2,8 @@ package timer
 
 import (
 	"errors"
-	"testing"
 	"sync"
+	"testing"
 )
 
 func TestPostitiveDuration(t *testing.T) {
@@ -69,18 +69,17 @@ func TestMultiBackendRecordings(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		be1 := c3.StartServiceCall("workflo")
+		be1 := c3.StartServiceCall("workflo", "localhost:12345")
 		be1.End(nil)
 	}()
 
 	go func() {
 		defer wg.Done()
-		be2 := c3.StartServiceCall("doc munger")
+		be2 := c3.StartServiceCall("doc munger", "localhost:12345")
 		be2.End(nil)
 	}()
 
 	wg.Wait()
-
 
 	c3.End(nil)
 

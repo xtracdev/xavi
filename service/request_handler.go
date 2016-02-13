@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 	"io"
 	"net/http"
+	"strings"
 )
 
 //Service represents a runnable service
@@ -22,6 +23,14 @@ type requestHandler struct {
 	PluginChain *list.List
 }
 
+func backendName(name string) string {
+	if strings.Contains(name, "backend") {
+		return name
+	} else {
+		return name + "-backend"
+	}
+}
+
 //Create a handler function from a requestHandler
 func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -33,7 +42,7 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			return
 		}
 
-		timingContributor := rt.StartContributor(rh.Backend.Name + " backend")
+		timingContributor := rt.StartContributor(backendName(rh.Backend.Name))
 
 		r.URL.Scheme = "http"
 
@@ -54,7 +63,7 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			serviceName = "backend-call"
 		}
 
-		beTimer := timingContributor.StartServiceCall(serviceName + " " + connectString)
+		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
 		resp, err := rh.Transport.RoundTrip(r)
 		beTimer.End(err)
 		if err != nil {

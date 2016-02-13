@@ -16,7 +16,9 @@ import (
 	"golang.org/x/net/context"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+	"unicode"
 )
 
 type key int
@@ -89,21 +91,31 @@ func logTiming(t *timer.EndToEndTimer) {
 //Function to modify epvar counters
 func updateCounters(t *timer.EndToEndTimer) {
 	if t.ErrorFree {
-		counts.Add(t.Name, 1)
-		metrics.IncrCounter([]string{t.Name}, 1.0)
+		countName := spaceMap(t.Name + "-count")
+		counts.Add(countName, 1)
+		metrics.IncrCounter([]string{countName}, 1.0)
 		writeTimingsToStatsd(t)
 	} else {
 		counts.Add(t.Name+"-errors", 1)
 	}
 }
 
+func spaceMap(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
+}
+
 //Send timing data to statsd
 func writeTimingsToStatsd(t *timer.EndToEndTimer) {
-	metrics.AddSample([]string{t.Name}, float32(t.Duration))
+	metrics.AddSample([]string{spaceMap(t.Name)}, float32(t.Duration))
 	for _, c := range t.Contributors {
-		metrics.AddSample([]string{t.Name + ":" + c.Name}, float32(c.Duration))
+		metrics.AddSample([]string{spaceMap(t.Name + "." + c.Name)}, float32(c.Duration))
 		for _, sc := range c.ServiceCalls {
-			metrics.AddSample([]string{t.Name + ":" + c.Name + ":" + sc.Name}, float32(sc.Duration))
+			metrics.AddSample([]string{spaceMap(t.Name + "." + c.Name + "." + sc.Name)}, float32(sc.Duration))
 		}
 	}
 }
