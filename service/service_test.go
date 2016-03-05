@@ -487,6 +487,8 @@ func TestPanickyPostRequestWithPlugin(t *testing.T) {
 	logged := false
 	errorMsg := false
 
+	//Create the recovery context, and set the test recovery context indirectly via
+	//SetGlobalHttpRecoveryContext and package variable httpRecoveryContext
 	rc := &recovery.RecoveryContext{
 		LogFn: func(r interface{}) { logged = true },
 		ErrorMessageFn: func(r interface{}) string {
@@ -494,6 +496,8 @@ func TestPanickyPostRequestWithPlugin(t *testing.T) {
 			return ""
 		},
 	}
+
+	SetGlobalHttpRecoveryContext(rc)
 
 	ts := httptest.NewServer(http.HandlerFunc(postHandler))
 	defer ts.Close()
@@ -510,7 +514,7 @@ func TestPanickyPostRequestWithPlugin(t *testing.T) {
 	wrapper := makeTestPanicWrapper()
 	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
 	wrappedHandler = timing.RequestTimerMiddleware(wrappedHandler)
-	wrappedHandler = recovery.GlobalPanicRecoveryMiddleware(rc, wrappedHandler)
+	wrappedHandler = recovery.GlobalPanicRecoveryMiddleware(httpRecoveryContext, wrappedHandler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
