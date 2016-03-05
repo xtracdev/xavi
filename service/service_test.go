@@ -484,6 +484,17 @@ func (aw testPanicWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
 }
 
 func TestPanickyPostRequestWithPlugin(t *testing.T) {
+	logged := false
+	errorMsg := false
+
+	rc := &recovery.RecoveryContext{
+		LogFn: func(r interface{}) { logged = true },
+		ErrorMessageFn: func(r interface{}) string {
+			errorMsg = true
+			return ""
+		},
+	}
+
 	ts := httptest.NewServer(http.HandlerFunc(postHandler))
 	defer ts.Close()
 
@@ -499,7 +510,7 @@ func TestPanickyPostRequestWithPlugin(t *testing.T) {
 	wrapper := makeTestPanicWrapper()
 	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
 	wrappedHandler = timing.RequestTimerMiddleware(wrappedHandler)
-	wrappedHandler = recovery.GlobalPanicRecoveryMiddleware(nil, wrappedHandler)
+	wrappedHandler = recovery.GlobalPanicRecoveryMiddleware(rc, wrappedHandler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
@@ -524,5 +535,6 @@ func TestPanickyPostRequestWithPlugin(t *testing.T) {
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-
+	assert.True(t, logged)
+	assert.True(t, errorMsg)
 }

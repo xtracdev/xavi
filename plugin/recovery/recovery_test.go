@@ -19,8 +19,8 @@ func TestSuppliedContextHandler(t *testing.T) {
 	errorMsg := false
 
 	rc := &RecoveryContext{
-		logFn: func(r interface{}) { logged = true },
-		errMsgFn: func(r interface{}) string {
+		LogFn: func(r interface{}) { logged = true },
+		ErrorMessageFn: func(r interface{}) string {
 			errorMsg = true
 			return ""
 		},

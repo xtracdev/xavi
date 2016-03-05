@@ -11,15 +11,15 @@ import (
 //RecoveryContext defines a structure to allow a logging function and error message formulation
 //function to be used when handling a panic produced when servicing an http route.
 type RecoveryContext struct {
-	logFn    func(interface{})
-	errMsgFn func(interface{}) string
+	LogFn          func(interface{})
+	ErrorMessageFn func(interface{}) string
 }
 
 
 //defaultGlobalRecoveryContext defines the default logging and error message when handling a panic
 //produced servicing an http route
 var defaultGlobalRecoveryContext = &RecoveryContext{
-	logFn: func(r interface{}) {
+	LogFn: func(r interface{}) {
 		var err error
 		switch t := r.(type) {
 		case string:
@@ -31,7 +31,7 @@ var defaultGlobalRecoveryContext = &RecoveryContext{
 		}
 		log.Warn("Handled panic: ", err.Error())
 	},
-	errMsgFn: func(r interface{}) string {
+	ErrorMessageFn: func(r interface{}) string {
 		return ""
 	},
 }
@@ -50,8 +50,8 @@ func GlobalPanicRecoveryMiddleware(rc *RecoveryContext, h plugin.ContextHandler)
 		defer func() {
 			r := recover()
 			if r != nil {
-				rc.logFn(r)
-				http.Error(rw, rc.errMsgFn(r), http.StatusInternalServerError)
+				rc.LogFn(r)
+				http.Error(rw, rc.ErrorMessageFn(r), http.StatusInternalServerError)
 			}
 		}()
 		h.ServeHTTPContext(ctx, rw, req)
