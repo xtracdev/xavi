@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
-	"github.com/xtracdev/xavi/plugin/recovery"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io/ioutil"
@@ -469,76 +468,4 @@ func TestPanicGuardConfig(t *testing.T) {
 	assert.Panics(t, func() {
 		ms.organizeRoutesByUri()
 	})
-}
-
-func makeTestPanicWrapper() plugin.Wrapper {
-	return new(testPanicWrapper)
-}
-
-type testPanicWrapper struct{}
-
-func (aw testPanicWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
-	return plugin.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		panic(fmt.Errorf("Kaboom!!!!!"))
-	})
-}
-
-func TestPanickyPostRequestWithPlugin(t *testing.T) {
-	logged := false
-	errorMsg := false
-
-	//Create the recovery context, and set the test recovery context indirectly via
-	//SetGlobalHttpRecoveryContext and package variable httpRecoveryContext
-	rc := &recovery.RecoveryContext{
-		LogFn: func(r interface{}) { logged = true },
-		ErrorMessageFn: func(r interface{}) string {
-			errorMsg = true
-			return ""
-		},
-	}
-
-	SetGlobalHttpRecoveryContext(rc)
-
-	ts := httptest.NewServer(http.HandlerFunc(postHandler))
-	defer ts.Close()
-
-	backend := makeTestBackend(t, ts.URL, "round-robin")
-
-	requestHandler := &requestHandler{
-		Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-		Backend:   backend,
-	}
-
-	handlerFn := requestHandler.toContextHandlerFunc()
-
-	wrapper := makeTestPanicWrapper()
-	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
-	wrappedHandler = timing.RequestTimerMiddleware(wrappedHandler)
-	wrappedHandler = recovery.GlobalPanicRecoveryMiddleware(httpRecoveryContext, wrappedHandler)
-
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: wrappedHandler,
-	}
-	ts2 := httptest.NewServer(adapter)
-	defer ts2.Close()
-
-	payload := `
-	{
-	"field1","val1",
-	"field2","field2"
-	}
-	`
-
-	req, _ := http.NewRequest("POST", ts2.URL+"/foo", bytes.NewBuffer([]byte(payload)))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	assert.Nil(t, err)
-
-	defer resp.Body.Close()
-
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	assert.True(t, logged)
-	assert.True(t, errorMsg)
 }

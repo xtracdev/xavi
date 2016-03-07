@@ -9,8 +9,8 @@ import (
 	"github.com/xtracdev/xavi/plugin/logging"
 	"io/ioutil"
 	"os"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func registerLoggingPlugin() {

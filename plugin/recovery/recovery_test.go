@@ -18,7 +18,7 @@ func TestSuppliedContextHandler(t *testing.T) {
 	logged := false
 	errorMsg := false
 
-	rc := &RecoveryContext{
+	rc := RecoveryContext{
 		LogFn: func(r interface{}) { logged = true },
 		ErrorMessageFn: func(r interface{}) string {
 			errorMsg = true
@@ -26,7 +26,9 @@ func TestSuppliedContextHandler(t *testing.T) {
 		},
 	}
 
-	handler := GlobalPanicRecoveryMiddleware(rc, plugin.ContextHandlerFunc(handleBar))
+	recoveryWrapper := RecoveryWrapper{RecoveryContext: rc}
+
+	handler := recoveryWrapper.Wrap(plugin.ContextHandlerFunc(handleBar))
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
@@ -45,7 +47,9 @@ func TestSuppliedContextHandler(t *testing.T) {
 }
 
 func TestDefaultContextHandler(t *testing.T) {
-	handler := GlobalPanicRecoveryMiddleware(nil, plugin.ContextHandlerFunc(handleBar))
+	recoveryWrapper := NewRecoveryWrapper()
+
+	handler := recoveryWrapper.Wrap(plugin.ContextHandlerFunc(handleBar))
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),

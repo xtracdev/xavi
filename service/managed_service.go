@@ -6,19 +6,11 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
-	"github.com/xtracdev/xavi/plugin/recovery"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"net/http"
 	"strings"
 )
-
-var httpRecoveryContext *recovery.RecoveryContext = nil
-
-//SetGlobalHttpRecoveryContext is used to set a non-default RecoveryContext for HTTP call handling
-func SetGlobalHttpRecoveryContext(rc *recovery.RecoveryContext) {
-	httpRecoveryContext = rc
-}
 
 //Managed service contains the configuration we boot a listener from.
 type managedService struct {
@@ -246,7 +238,6 @@ func (ms *managedService) Run() {
 	uriHandlerMap := ms.mapUrisToRoutes()
 	for uri, handler := range uriHandlerMap {
 		handler = timing.RequestTimerMiddleware(handler)
-		handler = recovery.GlobalPanicRecoveryMiddleware(httpRecoveryContext, handler)
 		adapter := &plugin.ContextAdapter{
 			Ctx:     context.Background(),
 			Handler: handler,

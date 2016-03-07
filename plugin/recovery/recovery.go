@@ -15,10 +15,23 @@ type RecoveryContext struct {
 	ErrorMessageFn func(interface{}) string
 }
 
+//RecoveryWrapper is a plugin type used for adding recovery handling as a plugin
+type RecoveryWrapper struct {
+	RecoveryContext RecoveryContext
+}
+
+//NewRecoveryWrapper is the factory function for instantiating a RecoveryWrapper. Note that anyone wanting
+//to customize the RecoveryWrapper with their own logging and error message functions will need to provide
+//their own factory method
+func NewRecoveryWrapper() plugin.Wrapper {
+	return &RecoveryWrapper{
+		RecoveryContext: defaultRecoveryContext,
+	}
+}
 
 //defaultGlobalRecoveryContext defines the default logging and error message when handling a panic
 //produced servicing an http route
-var defaultGlobalRecoveryContext = &RecoveryContext{
+var defaultRecoveryContext = RecoveryContext{
 	LogFn: func(r interface{}) {
 		var err error
 		switch t := r.(type) {
@@ -36,16 +49,10 @@ var defaultGlobalRecoveryContext = &RecoveryContext{
 	},
 }
 
-//GlobalPanicRecoveryMiddleware defines a middleware that xavi wraps the http call chain in, such that a
-//panic that occurs in the service handling gets logged and an error status is returned to the client.
-//If a recovery context is provided, the logging and error message used in the panic handling is derived
-//using the functions passed in the recovery context. Otherwise, the default logging and error message
-//is used.
-func GlobalPanicRecoveryMiddleware(rc *RecoveryContext, h plugin.ContextHandler) plugin.ContextHandler {
+//Wrap wraps the context handler with panic recovery capability.
+func (rcw RecoveryWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
 	return plugin.ContextHandlerFunc(func(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
-		if rc == nil {
-			rc = defaultGlobalRecoveryContext
-		}
+		rc := rcw.RecoveryContext
 
 		defer func() {
 			r := recover()
