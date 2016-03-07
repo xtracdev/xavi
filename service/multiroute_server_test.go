@@ -77,7 +77,7 @@ func TestMRConfigListener(t *testing.T) {
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
-		Handler: timing.RequestTimerMiddleware(uriHandlerMap[fooURI]),
+		Handler: timing.NewTimerWrapper().Wrap(uriHandlerMap[fooURI]),
 	}
 	ls := httptest.NewServer(adapter)
 	defer ls.Close()
