@@ -41,7 +41,9 @@ func TestContextPresent(t *testing.T) {
 	assert.NotNil(t, wrapperFactory)
 	handler := wrapperFactory.Wrap(plugin.ContextHandlerFunc(handleBar))
 
-	handler = RequestTimerMiddleware(handler)
+	timerWrapper := NewTimingWrapper()
+
+	handler = timerWrapper.Wrap(handler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),

@@ -4,18 +4,16 @@ import (
 	"bytes"
 	log "github.com/Sirupsen/logrus"
 	"github.com/armon/go-metrics"
+	"github.com/armon/go-metrics/datadog"
 	"github.com/xtracdev/xavi/env"
 	"os"
 	"strings"
 	"time"
-	"github.com/armon/go-metrics/datadog"
 )
-
 
 func init() {
 	initializeFromEnvironmentSettings()
 }
-
 
 func configureStatsD(endpoint string) {
 	namespace := os.Getenv(env.StatsdNamespace)
@@ -50,7 +48,7 @@ func configureDatadogStatsd(endpoint string, namespace string) {
 func configureVanillaStatsD(envEndpoint string, namespace string) {
 	log.Info("Using vanilla statsd client to send telemetry to ", envEndpoint)
 	sink, err := metrics.NewStatsdSink(envEndpoint)
-	if err != nil{
+	if err != nil {
 		log.Warn("Unable to configure statds sink", err.Error())
 		return
 	}
@@ -65,7 +63,7 @@ func initializeFromEnvironmentSettings() {
 		configureStatsD(envSettings)
 	} else {
 		log.Info("Using in memory metrics accumulator - dump via USR1 signal")
-		inm := metrics.NewInmemSink(10*time.Second, 5 * time.Minute)
+		inm := metrics.NewInmemSink(10*time.Second, 5*time.Minute)
 		metrics.DefaultInmemSignal(inm)
 		metrics.NewGlobal(metrics.DefaultConfig("xavi"), inm)
 	}

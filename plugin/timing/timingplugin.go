@@ -62,9 +62,15 @@ func TimerFromContext(ctx context.Context) *timer.EndToEndTimer {
 	return newCtx
 }
 
-//RequestTimerMiddleware implements the plugin Wrapper interface, and is used
+type TimingWrapper struct{}
+
+func NewTimingWrapper() plugin.Wrapper {
+	return TimingWrapper{}
+}
+
+//Wrap implements the plugin Wrapper interface, and is used
 //to wrap a handler to put a EndToEndTimer instance into the call context
-func RequestTimerMiddleware(h plugin.ContextHandler) plugin.ContextHandler {
+func (tw TimingWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
 	return plugin.ContextHandlerFunc(func(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 		ctx = NewContextWithTimer(ctx, req)
 		h.ServeHTTPContext(ctx, rw, req)

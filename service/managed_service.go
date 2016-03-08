@@ -6,7 +6,6 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
-	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"net/http"
 	"strings"
@@ -237,7 +236,6 @@ func (ms *managedService) Run() {
 
 	uriHandlerMap := ms.mapUrisToRoutes()
 	for uri, handler := range uriHandlerMap {
-		handler = timing.RequestTimerMiddleware(handler)
 		adapter := &plugin.ContextAdapter{
 			Ctx:     context.Background(),
 			Handler: handler,
