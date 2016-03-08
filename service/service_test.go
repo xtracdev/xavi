@@ -90,7 +90,7 @@ func TestPostRequest(t *testing.T) {
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
-		Handler: timing.NewTimerWrapper().Wrap(plugin.ContextHandlerFunc(handlerFn)),
+		Handler: timing.NewTimingWrapper().Wrap(plugin.ContextHandlerFunc(handlerFn)),
 	}
 
 	ts2 := httptest.NewServer(adapter)
@@ -134,7 +134,7 @@ func TestPostRequestWithPlugin(t *testing.T) {
 
 	wrapper := makeTestWrapper()
 	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
-	wrappedHandler = timing.NewTimerWrapper().Wrap(wrappedHandler)
+	wrappedHandler = timing.NewTimingWrapper().Wrap(wrappedHandler)
 
 	t.Log("When the echo server is proxied with a wrapped handler")
 
@@ -381,7 +381,7 @@ func validateURIHandlerMap(handlers map[string]plugin.ContextHandler, t *testing
 	assert.Nil(t, handlers["no way, Jose"])
 
 	handler := handlers["/foo"]
-	handler = timing.NewTimerWrapper().Wrap(handler)
+	handler = timing.NewTimingWrapper().Wrap(handler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),
@@ -443,7 +443,7 @@ func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 	uriHandlerMap := makeURIHandlerMap(uriToGuardAndHandlerMap)
 
 	handler := uriHandlerMap["/foo"]
-	handler = timing.NewTimerWrapper().Wrap(handler)
+	handler = timing.NewTimingWrapper().Wrap(handler)
 
 	adapter := &plugin.ContextAdapter{
 		Ctx:     context.Background(),

@@ -62,15 +62,15 @@ func TimerFromContext(ctx context.Context) *timer.EndToEndTimer {
 	return newCtx
 }
 
-type TimerWrapper struct{}
+type TimingWrapper struct{}
 
-func NewTimerWrapper() TimerWrapper {
-	return TimerWrapper{}
+func NewTimingWrapper() TimingWrapper {
+	return TimingWrapper{}
 }
 
 //Wrap implements the plugin Wrapper interface, and is used
 //to wrap a handler to put a EndToEndTimer instance into the call context
-func (tw TimerWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
+func (tw TimingWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
 	return plugin.ContextHandlerFunc(func(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 		ctx = NewContextWithTimer(ctx, req)
 		h.ServeHTTPContext(ctx, rw, req)
