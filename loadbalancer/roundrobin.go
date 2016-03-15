@@ -3,14 +3,17 @@ package loadbalancer
 import (
 	"container/ring"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/config"
 	"strings"
 	"sync"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/xtracdev/xavi/config"
 )
 
-//Use a mutex to ensure we're handing out one connect address at a time
-var roundRobinLoadBalancerMutex sync.Mutex
+var (
+	//Use a mutex to ensure we're handing out one connect address at a time
+	roundRobinLoadBalancerMutex sync.Mutex
+)
 
 //RoundRobinLoadBalancer maintains the information needed to hand out connections
 //one after another in order
@@ -67,7 +70,7 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 		rr.servers = rr.servers.Next()
 		loadBalancingEndpoint, ok := s.(*LoadBalancerEndpoint)
 		if ok {
-			if loadBalancingEndpoint.Up {
+			if loadBalancingEndpoint.IsUp() {
 				address = loadBalancingEndpoint.Address
 				break
 			}

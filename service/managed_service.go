@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"expvar"
 	"fmt"
+	"net/http"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"golang.org/x/net/context"
-	"net/http"
-	"strings"
 )
 
 //Managed service contains the configuration we boot a listener from.
