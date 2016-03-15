@@ -1,8 +1,9 @@
 package plugin
 
 import (
-	"golang.org/x/net/context"
 	"net/http"
+
+	"golang.org/x/net/context"
 )
 
 //BackendHandlerMap provides a map from backend name to the handler associated with the backend.
@@ -36,15 +37,13 @@ func (mra *MultiBackendAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func (mra *MultiBackendAdapter) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	mra.Ctx = ctx
-	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, mra.Ctx, w, r)
+	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
 }
 
 //ToHandlerFunc converts a MultiBackendAdapter to an http.HandlerFunc
 func (mra *MultiBackendAdapter) ToHandlerFunc() ContextHandlerFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		mra.Ctx = ctx
-		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, mra.Ctx, w, r)
+		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
 	}
 }
 

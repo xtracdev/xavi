@@ -1,13 +1,15 @@
 package plugin
 
 import (
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
 
 type TestMRHandler struct{}
@@ -109,6 +111,30 @@ func TestMultiBackendAdapter(t *testing.T) {
 	assert.True(t, strings.Contains(string(body), "a stuff"))
 }
 
+func TestMultiBackendAdapterConcurrently(t *testing.T) {
+
+	var handlerMap = make(BackendHandlerMap)
+	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
+
+	ts := httptest.NewServer(adapter)
+	defer ts.Close()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp, err := http.Get(ts.URL)
+			assert.Nil(t, err)
+			body, _ := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			assert.True(t, strings.Contains(string(body), "a stuff"))
+		}()
+	}
+	wg.Wait()
+}
+
 func TestMBAWithFactory(t *testing.T) {
 	assert.False(t, MultiBackendAdapterRegistryContains("b-plugin"))
 	var factory MultiBackendAdapterFactory = BMRAFactory
@@ -138,6 +164,44 @@ func TestMBAWithFactory(t *testing.T) {
 	assert.True(t, strings.Contains(string(body), "b stuff"))
 	assert.True(t, strings.Contains(string(body), "backend context A"))
 
+}
+
+func TestMBAWithFactoryConcurrently(t *testing.T) {
+	var factory MultiBackendAdapterFactory = BMRAFactory
+	RegisterMultiBackendAdapterFactory("b-plugin", factory)
+	assert.True(t, MultiBackendAdapterRegistryContains("b-plugin"))
+
+	registeredAdapters := ListMultiBackendAdapters()
+	assert.Equal(t, 1, len(registeredAdapters))
+	assert.Equal(t, "b-plugin", registeredAdapters[0])
+
+	factoryFromReg, err := LookupMultiBackendAdapterFactory("b-plugin")
+	assert.Nil(t, err)
+	assert.NotNil(t, factoryFromReg)
+
+	var handlerMap = make(BackendHandlerMap)
+	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	adapter := factoryFromReg(handlerMap)
+
+	ts := httptest.NewServer(adapter)
+	defer ts.Close()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			resp, err := http.Get(ts.URL)
+			assert.Nil(t, err)
+			body, _ := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			println("--->", string(body))
+			assert.True(t, strings.Contains(string(body), "b stuff"))
+			assert.True(t, strings.Contains(string(body), "backend context A"))
+		}()
+	}
+	wg.Wait()
 }
 
 func TestWrappedPlugin(t *testing.T) {
