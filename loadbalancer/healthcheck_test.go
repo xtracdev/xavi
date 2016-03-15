@@ -2,16 +2,18 @@ package loadbalancer
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/xtracdev/xavi/config"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/xtracdev/xavi/config"
 )
 
 func TestIsKnownHealthCheck(t *testing.T) {
@@ -108,6 +110,57 @@ func TestMakeHealthCheck(t *testing.T) {
 	assert.True(t, called)
 	assert.True(t, lbEndpoint.Up)
 
+}
+
+func TestMakeHealthCheckConcurrently(t *testing.T) {
+	var called = false
+	var mu sync.Mutex
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		called = true
+		mu.Unlock()
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+
+	lbEndpoint := new(LoadBalancerEndpoint)
+	lbEndpoint.Address = ts.URL
+	lbEndpoint.PingURI = "/foo"
+	lbEndpoint.Up = false
+
+	testURL, err := url.Parse(ts.URL)
+	assert.Nil(t, err)
+	_, portStr, err := net.SplitHostPort(testURL.Host)
+	assert.Nil(t, err)
+
+	port, err := strconv.Atoi(portStr)
+
+	serverConfig := config.ServerConfig{
+		Name:                "testcfg",
+		Address:             "localhost",
+		Port:                port,
+		PingURI:             "/foo",
+		HealthCheck:         "http-get",
+		HealthCheckInterval: 200,
+		HealthCheckTimeout:  100,
+	}
+
+	healthcheckFn := MakeHealthCheck(lbEndpoint, serverConfig, false)
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go healthcheckFn()
+		time.AfterFunc(1e9, func() {
+			wg.Done()
+		})
+	}
+	wg.Wait()
+	mu.Lock()
+	assert.True(t, called)
+	mu.Unlock()
+
+	assert.True(t, lbEndpoint.IsUp())
 }
 
 func TestMakeHealthCheckUnhealthy(t *testing.T) {

@@ -1,6 +1,8 @@
 package loadbalancer
 
 import (
+	"sync"
+
 	"github.com/xtracdev/xavi/config"
 )
 
@@ -10,6 +12,21 @@ type LoadBalancerEndpoint struct {
 	Address string
 	PingURI string
 	Up      bool
+	mu      sync.RWMutex
+}
+
+//IsUp reads the status of the endpoint. The function is safe for simultaneous use by multiple goroutines.
+func (lb *LoadBalancerEndpoint) IsUp() bool {
+	lb.mu.RLock()
+	defer lb.mu.RUnlock()
+	return lb.Up
+}
+
+//MarkLoadBalancerEndpointUp sets the status for this endpoind. The function is safe for simultaneous use by multiple goroutines.
+func (lb *LoadBalancerEndpoint) MarkLoadBalancerEndpointUp(isUp bool) {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	lb.Up = isUp
 }
 
 //LoadBalancer has methods for handing out connection addressed and marking

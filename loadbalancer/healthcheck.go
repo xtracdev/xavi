@@ -2,11 +2,12 @@ package loadbalancer
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/config"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/xtracdev/xavi/config"
 )
 
 //DefaultHealthCheckInterval is the time between health checks if no value is specified by the configuration
@@ -76,15 +77,15 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 			case healthStatus := <-healthy(url):
 				if !healthStatus {
 					log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
-					lbEndpoint.Up = false
+					lbEndpoint.MarkLoadBalancerEndpointUp(false)
 				} else {
 					log.Debug("Endpoint is up: ", serverConfig.Address, ":", serverConfig.Port)
-					lbEndpoint.Up = true
+					lbEndpoint.MarkLoadBalancerEndpointUp(true)
 				}
 
 			case <-time.After(time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond):
 				log.Warn("Health check timed out - marking endpoint ", serverConfig.Address, ":", serverConfig.Port, " as not healthy")
-				lbEndpoint.Up = false
+				lbEndpoint.MarkLoadBalancerEndpointUp(false)
 			}
 
 			if loop == false {
