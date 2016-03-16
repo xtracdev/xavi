@@ -159,21 +159,13 @@ func TestNewEndToEndTimerRaceCondition(t *testing.T) {
 	var eet *EndToEndTimer
 	var wg sync.WaitGroup
 
-	/*wg.Add(1)
-	go func(eet *EndToEndTimer) {
-		defer wg.Done()
-		eet = NewEndToEndTimer("foo")
-	}(eet)*/
 	eet = NewEndToEndTimer("foo")
-	t.Logf("%v\n", eet)
 
 	wg.Add(1)
-	go func(eet *EndToEndTimer) {
+	go func() {
 		defer wg.Done()
-		for eet == nil {
-		}
 		eet.StartContributor("fst")
-	}(eet)
+	}()
 
 	wg.Wait()
 	t.Logf("%s\n", eet.ToJSONString())
