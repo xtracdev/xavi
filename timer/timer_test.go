@@ -2,8 +2,10 @@ package timer
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestPostitiveDuration(t *testing.T) {
@@ -104,4 +106,76 @@ func TestMultiBackendRecordings(t *testing.T) {
 	}
 
 	println(at.ToJSONString())
+}
+
+func TestEndToEndTimerRaceCondition(t *testing.T) {
+	eet := NewEndToEndTimer("racy")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		eet.StartContributor("fst")
+		time.AfterFunc(1e9, func() { eet.Stop(nil) })
+	}()
+
+	wg.Add(1)
+	time.AfterFunc(2e9, func() {
+		defer wg.Done()
+		s := eet.ToJSONString()
+		t.Logf("%s\n", s)
+	})
+	wg.Wait()
+}
+
+func TestEndToEndTimerContributorRaceCondition(t *testing.T) {
+	eet := NewEndToEndTimer("racy")
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c := eet.StartContributor("fst")
+		sc := c.StartServiceCall("foo call", "/foo/service")
+		wg.Add(3)
+		time.AfterFunc(1e9, func() { defer wg.Done(); sc.End(nil) })
+		time.AfterFunc(2e9, func() { defer wg.Done(); c.End(fmt.Errorf("Error num %v", 1)) })
+		time.AfterFunc(3e9, func() { defer wg.Done(); eet.Stop(nil) })
+	}()
+
+	wg.Add(1)
+	time.AfterFunc(2e9, func() {
+		defer wg.Done()
+		s := eet.ToJSONString()
+		t.Logf("%s\n", s)
+	})
+
+	errs := eet.ContributorErrors()
+	t.Logf("%v\n", errs)
+
+	wg.Wait()
+}
+
+func TestNewEndToEndTimerRaceCondition(t *testing.T) {
+	var eet *EndToEndTimer
+	var wg sync.WaitGroup
+
+	/*wg.Add(1)
+	go func(eet *EndToEndTimer) {
+		defer wg.Done()
+		eet = NewEndToEndTimer("foo")
+	}(eet)*/
+	eet = NewEndToEndTimer("foo")
+	t.Logf("%v\n", eet)
+
+	wg.Add(1)
+	go func(eet *EndToEndTimer) {
+		defer wg.Done()
+		for eet == nil {
+		}
+		eet.StartContributor("fst")
+	}(eet)
+
+	wg.Wait()
+	t.Logf("%s\n", eet.ToJSONString())
+
 }

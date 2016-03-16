@@ -9,16 +9,17 @@ package timing
 import (
 	"expvar"
 	"fmt"
-	"github.com/armon/go-metrics"
-	"github.com/xtracdev/xavi/plugin"
-	_ "github.com/xtracdev/xavi/statsd"
-	"github.com/xtracdev/xavi/timer"
-	"golang.org/x/net/context"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/armon/go-metrics"
+	"github.com/xtracdev/xavi/plugin"
+	_ "github.com/xtracdev/xavi/statsd"
+	"github.com/xtracdev/xavi/timer"
+	"golang.org/x/net/context"
 )
 
 type key int
@@ -117,11 +118,18 @@ func spaceMap(str string) string {
 
 //Send timing data to statsd
 func writeTimingsToStatsd(t *timer.EndToEndTimer) {
+	t.RLock()
+	defer t.RUnlock()
+
 	metrics.AddSample([]string{spaceMap(t.Name)}, float32(t.Duration))
 	for _, c := range t.Contributors {
+		c.RLock()
 		metrics.AddSample([]string{spaceMap(t.Name + "." + c.Name)}, float32(c.Duration))
 		for _, sc := range c.ServiceCalls {
+			sc.RLock()
 			metrics.AddSample([]string{spaceMap(t.Name + "." + c.Name + "." + sc.Name)}, float32(sc.Duration))
+			sc.RUnlock()
 		}
+		c.RUnlock()
 	}
 }
