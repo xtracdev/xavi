@@ -14,6 +14,7 @@ import (
 
 //ServiceCall is used to capture a service call made in the context of a Contributor timing.
 type ServiceCall struct {
+	sync.RWMutex
 	Name     string
 	Endpoint string
 	Duration time.Duration
@@ -23,7 +24,7 @@ type ServiceCall struct {
 
 //Contributor is used to capture sub-timings of note that contribute to the end to end time.
 type Contributor struct {
-	sync.Mutex
+	sync.RWMutex
 	Name         string
 	Duration     time.Duration
 	Error        string
@@ -35,7 +36,7 @@ type Contributor struct {
 //an end to end time using StartContributor. Note logging timestamp is serialized as
 //time so we can have a single logging time index in elasticsearch
 type EndToEndTimer struct {
-	sync.Mutex
+	sync.RWMutex
 	Name             string
 	Duration         time.Duration
 	LoggingTimestamp time.Time `json:"time"`
@@ -60,11 +61,17 @@ func NewEndToEndTimer(name string) *EndToEndTimer {
 //it should be noted by passing an error object to Stop, otherwise pass nil. The JSON
 //representation of the timing data will reflect if an error occurred during the timing.
 func (t *EndToEndTimer) Stop(err error) {
+	t.Lock()
 	t.Duration = time.Now().Sub(t.start)
+	t.Unlock()
 	if err != nil {
 		t.Error = err.Error()
 	}
-	t.ErrorFree = len(t.ContributorErrors()) == 0 && t.Error == ""
+	//read contributor errors outside critical region to avoid deadlock
+	ce := len(t.ContributorErrors())
+	t.Lock()
+	t.ErrorFree = ce == 0 && t.Error == ""
+	t.Unlock()
 }
 
 //StartContributor creates a Contributor for capturing a sub timing,
@@ -86,11 +93,15 @@ func (t *EndToEndTimer) StartContributor(name string) *Contributor {
 //reported by the  contributor subtimings associated with an
 //EndToEndTimer
 func (t *EndToEndTimer) ContributorErrors() []string {
+	t.RLock()
+	defer t.RUnlock()
 	var errs []string
 	for _, c := range t.Contributors {
+		c.RLock()
 		if c.Error != "" {
 			errs = append(errs, c.Error)
 		}
+		c.RUnlock()
 	}
 	return errs
 }
@@ -98,7 +109,25 @@ func (t *EndToEndTimer) ContributorErrors() []string {
 //ToJSONString produces a JSON string representation of an EndToEndTimer, including all of
 //its contributors.
 func (t *EndToEndTimer) ToJSONString() string {
+	t.RLock()
+	//readlock all contributors
+	for _, c := range t.Contributors {
+		c.RLock()
+		//readlock all servicecalls
+		for _, sc := range c.ServiceCalls {
+			sc.RLock()
+		}
+	}
 	s, err := json.Marshal(t)
+	//readunlock all contributors
+	for _, c := range t.Contributors {
+		c.RUnlock()
+		//readunlock all servicecalls
+		for _, sc := range c.ServiceCalls {
+			sc.RUnlock()
+		}
+	}
+	t.RUnlock()
 	if err != nil {
 		s = []byte("{}")
 	}
@@ -109,9 +138,13 @@ func (t *EndToEndTimer) ToJSONString() string {
 //during the contributor should be pass along in the err argument, otherwise
 //pass nil.
 func (c *Contributor) End(err error) {
+	c.Lock()
 	c.Duration = time.Now().Sub(c.start)
+	c.Unlock()
 	if err != nil {
+		c.Lock()
 		c.Error = err.Error()
+		c.Unlock()
 	}
 }
 
@@ -135,9 +168,13 @@ func (c *Contributor) StartServiceCall(name string, endpoint string) *ServiceCal
 
 //End stops the clock for a ServiceCall
 func (sc *ServiceCall) End(err error) {
+	sc.Lock()
 	sc.Duration = time.Now().Sub(sc.start)
+	sc.Unlock()
 	if err != nil {
+		sc.Lock()
 		sc.Error = err.Error()
+		sc.Unlock()
 	}
 }
 
