@@ -46,7 +46,8 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 		timingContributor := rt.StartContributor(backendName(rh.Backend.Name))
 
-		r.URL.Scheme = "http"
+
+
 
 		connectString, err := rh.Backend.getConnectAddress()
 		if err != nil {
@@ -65,12 +66,20 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			serviceName = "backend-call"
 		}
 
+		r.URL.Scheme = "http"
+		log.Debug("Determine transport")
 		var transport = rh.getTransportForBackend(ctx)
+		if transport == rh.TLSTransport {
+			log.Debug("https transport")
+			r.URL.Scheme = "https"
+		}
 
 		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
+		log.Debug("call service")
 		resp, err := transport.RoundTrip(r)
 		beTimer.End(err)
 		if err != nil {
+			log.Info(err.Error())
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, "Error: %v", err)
 			timingContributor.End(err)
@@ -98,6 +107,7 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 func (rh *requestHandler) getTransportForBackend(ctx context.Context) *http.Transport {
 	//If we always use TLS use the TLS transport
 	if rh.Backend.TLSOnly {
+		log.Debug("tlsonly transport")
 		return rh.TLSTransport
 	}
 
@@ -105,8 +115,10 @@ func (rh *requestHandler) getTransportForBackend(ctx context.Context) *http.Tran
 	useHttps := plugin.GetUseHttpsContext(ctx)
 	switch useHttps {
 	case true:
+		log.Debug("https transport from context")
 		return rh.TLSTransport
 	default:
+		log.Debug("Non-TLS transport")
 		return rh.Transport
 	}
 }

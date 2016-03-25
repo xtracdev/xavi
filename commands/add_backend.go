@@ -10,6 +10,7 @@ import (
 	"github.com/xtracdev/xavi/loadbalancer"
 	"os"
 	"strings"
+	log "github.com/Sirupsen/logrus"
 )
 
 //AddBackend provides a CLI compatible command
@@ -48,6 +49,7 @@ func (ab *AddBackend) Help() string {
 //Run processed the command line argument passed in args for adding
 //a backend configuration to the KV store assocaited with AddBackend
 func (ab *AddBackend) Run(args []string) int {
+	log.Debug("AddBackend run commands ", args)
 	var name, serverList, loadBalancerPolicy, caCertPath string
 	var tlsOnly bool
 	cmdFlags := flag.NewFlagSet("add-backend", flag.ContinueOnError)
@@ -97,6 +99,8 @@ func (ab *AddBackend) Run(args []string) int {
 		Name:               name,
 		ServerNames:        strings.Split(serverList, ","),
 		LoadBalancerPolicy: loadBalancerPolicy,
+		TLSOnly: tlsOnly,
+		CACertPath: caCertPath,
 	}
 
 	if err := backend.Store(ab.KVStore); err != nil {
@@ -119,6 +123,7 @@ func (ab *AddBackend) Synopsis() string {
 }
 
 func (ab *AddBackend) validCertAndTLS(caCertPath string, tlsOnly bool) error {
+	log.Debug(fmt.Sprintf("validCertAndTLS cert path %s tlsOnly %v", caCertPath, tlsOnly))
 	if caCertPath != "" {
 		if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
 			return ErrBadPathSpec
