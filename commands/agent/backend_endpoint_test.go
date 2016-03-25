@@ -125,7 +125,7 @@ func TestBackendGet(t *testing.T) {
 	res.Body.Close()
 	assert.Nil(t, err)
 
-	expected := `{"Name":"test-name","ServerNames":["server1","server2"],"LoadBalancerPolicy":""}`
+	expected := `{"Name":"test-name","ServerNames":["server1","server2"],"LoadBalancerPolicy":"","CACertPath":"","TLSOnly":false}`
 
 	responseString := string(rs)
 	assert.Equal(t, expected, responseString)
@@ -170,7 +170,7 @@ func TestBackendGetList(t *testing.T) {
 	res.Body.Close()
 	assert.Nil(t, err)
 
-	expected := `[{"Name":"test-name","ServerNames":["server1","server2"],"LoadBalancerPolicy":""}]`
+	expected := `[{"Name":"test-name","ServerNames":["server1","server2"],"LoadBalancerPolicy":"","CACertPath":"","TLSOnly":false}]`
 
 	responseString := string(rs)
 	assert.Equal(t, expected, responseString)

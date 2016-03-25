@@ -21,11 +21,17 @@ func testMakeAddRoute(faultyStore bool, t *testing.T) (*bytes.Buffer, *AddRoute)
 	}
 
 	//Add the backends the command will validate
-	b := &config.BackendConfig{"b1", []string{"s1", "s2", "s3"}, ""}
+	b := &config.BackendConfig{
+		Name:        "b1",
+		ServerNames: []string{"s1", "s2", "s3"},
+	}
 	err := b.Store(kvs)
 	assert.Nil(t, err)
 
-	b = &config.BackendConfig{"b2", []string{"s1", "s2", "s3"}, ""}
+	b = &config.BackendConfig{
+		Name:        "b2",
+		ServerNames: []string{"s1", "s2", "s3"},
+	}
 	err = b.Store(kvs)
 	assert.Nil(t, err)
 

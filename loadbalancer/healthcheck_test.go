@@ -124,6 +124,10 @@ func TestMakeHealthCheckConcurrently(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	//Saw test failures appear randomly - speculated adding a delay would allow this to
+	//work. No race condition detected.
+	time.Sleep(500 * time.Millisecond)
+
 	lbEndpoint := new(LoadBalancerEndpoint)
 	lbEndpoint.Address = ts.URL
 	lbEndpoint.PingURI = "/foo"

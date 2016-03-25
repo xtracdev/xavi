@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -84,7 +86,7 @@ func TestAddBackendStoreFault(t *testing.T) {
 	assert.True(t, strings.Contains(writer.String(), "Faulty store"))
 }
 
-func TestAddBackendOK(t *testing.T) {
+func TestAddBackendFaultyStore(t *testing.T) {
 	writer, addBackend := testMakeAddBackend(true)
 	args := []string{"-name", "test", "-servers", "foo"}
 	status := addBackend.Run(args)
@@ -103,4 +105,63 @@ func TestAddBackendParseArgsError(t *testing.T) {
 	args := []string{"-foofest"}
 	status := addBackend.Run(args)
 	assert.Equal(t, 1, status)
+}
+
+func TestAddBackendInvalidCACertPath(t *testing.T) {
+	writer, addBackend := testMakeAddBackend(false)
+	args := []string{"-name", "test", "-servers", "foo", "-cacert-path", "/not-int-root.pem"}
+	status := addBackend.Run(args)
+	assert.Equal(t, 1, status)
+	assert.True(t, strings.Contains(writer.String(), ErrBadPathSpec.Error()))
+}
+
+func TestAddBackendWithValidCACertPath(t *testing.T) {
+
+	tmpfile, err := ioutil.TempFile("/tmp", "catest")
+	if err != nil {
+		t.Log(err.Error())
+		t.Fail()
+		return
+	}
+
+	defer os.Remove(tmpfile.Name()) // clean up
+
+	println(tmpfile.Name())
+
+	writer, addBackend := testMakeAddBackend(false)
+	args := []string{"-name", "test", "-servers", "foo", "-cacert-path", tmpfile.Name()}
+	status := addBackend.Run(args)
+	assert.Equal(t, 0, status)
+	if status != 0 {
+		t.Log(writer.String())
+	}
+}
+
+func TestSpecifyTLSOnlyWithoutCACert(t *testing.T) {
+	writer, addBackend := testMakeAddBackend(false)
+	args := []string{"-name", "test", "-servers", "foo", "-tls-only"}
+	status := addBackend.Run(args)
+	assert.Equal(t, 1, status)
+	assert.True(t, strings.Contains(writer.String(), ErrMustSupplyCACert.Error()))
+}
+
+func TestSpecifyTLSOnlyCACertOk(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("/tmp", "catest")
+	if err != nil {
+		t.Log(err.Error())
+		t.Fail()
+		return
+	}
+
+	defer os.Remove(tmpfile.Name()) // clean up
+
+	println(tmpfile.Name())
+
+	writer, addBackend := testMakeAddBackend(false)
+	args := []string{"-name", "test", "-servers", "foo", "-cacert-path", tmpfile.Name(), "-tls-only"}
+	status := addBackend.Run(args)
+	assert.Equal(t, 0, status)
+	if status != 0 {
+		t.Log(writer.String())
+	}
 }
