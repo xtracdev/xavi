@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"github.com/xtracdev/xavi/plugin"
 )
 
 //Service represents a runnable service
@@ -64,8 +65,10 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			serviceName = "backend-call"
 		}
 
+		var transport = rh.getTransportForBackend(ctx)
+
 		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
-		resp, err := rh.Transport.RoundTrip(r)
+		resp, err := transport.RoundTrip(r)
 		beTimer.End(err)
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -89,5 +92,21 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		resp.Body.Close()
 
 		timingContributor.End(nil)
+	}
+}
+
+func (rh *requestHandler) getTransportForBackend(ctx context.Context) *http.Transport {
+	//If we always use TLS use the TLS transport
+	if rh.Backend.TLSOnly {
+		return rh.TLSTransport
+	}
+
+	//Does the context indicate that his particular call will be https?
+	useHttps := plugin.GetUseHttpsContext(ctx)
+	switch useHttps {
+	case true:
+		return rh.TLSTransport
+	default:
+		return rh.Transport
 	}
 }
