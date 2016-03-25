@@ -18,9 +18,10 @@ type Service interface {
 
 //Request handler has the configuration needed to build an http.Handler for a route and its chained plugins
 type requestHandler struct {
-	Transport   *http.Transport
-	Backend     *backend
-	PluginChain *list.List
+	Transport    *http.Transport
+	TLSTransport *http.Transport
+	Backend      *backend
+	PluginChain  *list.List
 }
 
 func backendName(name string) string {

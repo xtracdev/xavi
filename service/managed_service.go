@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"crypto/tls"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"golang.org/x/net/context"
@@ -57,9 +58,12 @@ type guardAndHandler struct {
 func makeGHEntryForSingleBackendRoute(r route) guardAndHandler {
 	guardFn := makeGuardFunction(r)
 
+	tlsConfig := &tls.Config{RootCAs: r.Backends[0].CACert}
+
 	requestHandler := &requestHandler{
-		Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-		Backend:   r.Backends[0],
+		Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
+		TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig},
+		Backend:      r.Backends[0],
 	}
 
 	handlerFn := requestHandler.toContextHandlerFunc()
@@ -90,9 +94,12 @@ func makeGHEntryForMultipleBackends(r route) guardAndHandler {
 	//Go through the backends and build a handler for each
 	for _, backend := range r.Backends {
 		log.Debug("handler for ", backend.Name)
+
+		tlsConfig := &tls.Config{RootCAs: r.Backends[0].CACert}
 		requestHandler := &requestHandler{
-			Transport: &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-			Backend:   backend,
+			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
+			TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig},
+			Backend:      backend,
 		}
 
 		var handlerFn plugin.ContextHandlerFunc = requestHandler.toContextHandlerFunc()

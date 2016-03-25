@@ -19,7 +19,7 @@ func initKVStore(t *testing.T) kvstore.KVStore {
 	loadMultiRoute(kvs, t)
 	loadRouteWithNoBackends(kvs, t)
 	loadTLSOnlyBackend(kvs, t)
-	loadTLSOnlyBackendBadCert(kvs,t)
+	loadTLSOnlyBackendBadCert(kvs, t)
 	return kvs
 }
 
