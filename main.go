@@ -5,6 +5,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/logging"
+	"github.com/xtracdev/xavi/plugin/recovery"
+	"github.com/xtracdev/xavi/plugin/timing"
 	"github.com/xtracdev/xavi/runner"
 	"os"
 )
@@ -18,6 +20,9 @@ func registerPlugins() {
 		log.Warn("Error registering logging wrapper plugin factory")
 	}
 	log.Info("logging wrapper plugin registered")
+
+	plugin.RegisterWrapperFactory("Timing", timing.NewTimingWrapper)
+	plugin.RegisterWrapperFactory("Recovery", recovery.NewRecoveryWrapper)
 
 	log.Info("Plugins registered")
 }
