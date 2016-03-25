@@ -2,18 +2,24 @@ package service
 
 import (
 	"bytes"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/loadbalancer"
+	"io/ioutil"
 )
 
 type backend struct {
 	Name         string
 	LoadBalancer loadbalancer.LoadBalancer
+	TLSOnly      bool
+	CACert       *x509.CertPool
 }
+
+var ErrCACertFile = errors.New("CACert file contained no certificates")
 
 func instantiateLoadBalancer(policyName string, backendName string, servers []config.ServerConfig) (loadbalancer.LoadBalancer, error) {
 	factory := loadbalancer.ObtainFactoryForLoadBalancer(policyName)
@@ -70,6 +76,13 @@ func buildBackend(kvs kvstore.KVStore, name string) (*backend, error) {
 
 	b.LoadBalancer = loadBalancer
 
+	b.TLSOnly = backendConfig.TLSOnly
+
+	b.CACert, err = createCertPool(backendConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &b, nil
 }
 
@@ -82,4 +95,24 @@ func (b *backend) String() string {
 
 func (b *backend) getConnectAddress() (string, error) {
 	return b.LoadBalancer.GetConnectAddress()
+}
+
+func createCertPool(backendConfig *config.BackendConfig) (*x509.CertPool, error) {
+	if backendConfig.CACertPath == "" {
+		return nil, nil
+	}
+
+	pool := x509.NewCertPool()
+
+	pemData, err := ioutil.ReadFile(backendConfig.CACertPath)
+	if err != nil {
+		return nil, err
+	}
+
+	ok := pool.AppendCertsFromPEM(pemData)
+	if !ok {
+		return nil, ErrCACertFile
+	}
+
+	return pool, nil
 }

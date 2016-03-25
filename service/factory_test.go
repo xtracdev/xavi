@@ -18,6 +18,8 @@ func initKVStore(t *testing.T) kvstore.KVStore {
 	loadConfigTwoBackendsNoPluginNameSpecified(kvs, t)
 	loadMultiRoute(kvs, t)
 	loadRouteWithNoBackends(kvs, t)
+	loadTLSOnlyBackend(kvs, t)
+	loadTLSOnlyBackendBadCert(kvs,t)
 	return kvs
 }
 
@@ -73,8 +75,8 @@ func loadTestConfig1(kvs kvstore.KVStore, t *testing.T) {
 	}
 
 	b := &config.BackendConfig{
-		Name:"hello-backend",
-		ServerNames:[]string{"server1", "server2"},
+		Name:        "hello-backend",
+		ServerNames: []string{"server1", "server2"},
 	}
 	err = b.Store(kvs)
 	if err != nil {
@@ -114,8 +116,8 @@ func loadConfigTwoBackendsNoPluginNameSpecified(kvs kvstore.KVStore, t *testing.
 	}
 
 	be1 := &config.BackendConfig{
-		Name:"be1",
-		ServerNames:[]string{"server1", "server2"},
+		Name:        "be1",
+		ServerNames: []string{"server1", "server2"},
 	}
 	err = be1.Store(kvs)
 	if err != nil {
@@ -123,8 +125,8 @@ func loadConfigTwoBackendsNoPluginNameSpecified(kvs kvstore.KVStore, t *testing.
 	}
 
 	be2 := &config.BackendConfig{
-		Name:"be2",
-		ServerNames:[]string{"server1", "server2"},
+		Name:        "be2",
+		ServerNames: []string{"server1", "server2"},
 	}
 	err = be2.Store(kvs)
 	if err != nil {
@@ -171,6 +173,32 @@ func loadRouteWithNoBackends(kvs kvstore.KVStore, t *testing.T) {
 		MultiBackendAdapter: "test-plugin",
 	}
 	err = r.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func loadTLSOnlyBackend(kvs kvstore.KVStore, t *testing.T) {
+	be1 := &config.BackendConfig{
+		Name:        "be-tls",
+		ServerNames: []string{"server1", "server2"},
+		TLSOnly:     true,
+		CACertPath:  "./cert.pem",
+	}
+	err := be1.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func loadTLSOnlyBackendBadCert(kvs kvstore.KVStore, t *testing.T) {
+	be1 := &config.BackendConfig{
+		Name:        "be-tls-bogus-cert",
+		ServerNames: []string{"server1", "server2"},
+		TLSOnly:     true,
+		CACertPath:  "./badcert.pem",
+	}
+	err := be1.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
 	}
