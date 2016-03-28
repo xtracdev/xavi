@@ -102,6 +102,8 @@ func createCertPool(backendConfig *config.BackendConfig) (*x509.CertPool, error)
 		return nil, nil
 	}
 
+	log.Debug("Creating cert pool for backend ", backendConfig.Name)
+
 	pool := x509.NewCertPool()
 
 	pemData, err := ioutil.ReadFile(backendConfig.CACertPath)

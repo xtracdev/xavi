@@ -1,18 +1,19 @@
 package service
+
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"crypto/tls"
-	"net/http"
-	"golang.org/x/net/context"
+	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/plugin"
+	"golang.org/x/net/context"
+	"net/http"
+	"testing"
 )
 
 func TestNonTLSTransportSelection(t *testing.T) {
 	var testKVS = initKVStore(t)
 	be, err := buildBackend(testKVS, "be1")
 	if assert.Nil(t, err) {
-		tlsConfig := &tls.Config{RootCAs:be.CACert}
+		tlsConfig := &tls.Config{RootCAs: be.CACert}
 
 		requestHandler := &requestHandler{
 			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
@@ -31,7 +32,7 @@ func TestNonTLSOnlyTransportSelection(t *testing.T) {
 	var testKVS = initKVStore(t)
 	be, err := buildBackend(testKVS, "be-tls")
 	if assert.Nil(t, err) {
-		tlsConfig := &tls.Config{RootCAs:be.CACert}
+		tlsConfig := &tls.Config{RootCAs: be.CACert}
 
 		requestHandler := &requestHandler{
 			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
@@ -50,7 +51,7 @@ func TestNonTLSTransportHttpsContext(t *testing.T) {
 	var testKVS = initKVStore(t)
 	be, err := buildBackend(testKVS, "be1")
 	if assert.Nil(t, err) {
-		tlsConfig := &tls.Config{RootCAs:be.CACert}
+		tlsConfig := &tls.Config{RootCAs: be.CACert}
 
 		requestHandler := &requestHandler{
 			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
@@ -65,4 +66,3 @@ func TestNonTLSTransportHttpsContext(t *testing.T) {
 	}
 
 }
-

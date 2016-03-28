@@ -95,7 +95,7 @@ func makeGHEntryForMultipleBackends(r route) guardAndHandler {
 	for _, backend := range r.Backends {
 		log.Debug("handler for ", backend.Name)
 
-		tlsConfig := &tls.Config{RootCAs: r.Backends[0].CACert}
+		tlsConfig := &tls.Config{RootCAs: backend.CACert}
 		requestHandler := &requestHandler{
 			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
 			TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig},

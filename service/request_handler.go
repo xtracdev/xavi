@@ -4,12 +4,12 @@ import (
 	"container/list"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io"
 	"net/http"
 	"strings"
-	"github.com/xtracdev/xavi/plugin"
 )
 
 //Service represents a runnable service
@@ -46,9 +46,6 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 		timingContributor := rt.StartContributor(backendName(rh.Backend.Name))
 
-
-
-
 		connectString, err := rh.Backend.getConnectAddress()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -56,7 +53,7 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			return
 		}
 
-		log.Debug("connect string is ", connectString)
+		log.Debug("connect string for ", rh.Backend.Name, "is ", connectString)
 		r.URL.Host = connectString
 		r.Host = connectString
 
@@ -74,8 +71,10 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			r.URL.Scheme = "https"
 		}
 
+		log.Debug(r.URL.Scheme, " transport for backend ", rh.Backend.Name)
+
 		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
-		log.Debug("call service")
+		log.Debug("call service ", serviceName, " for backend ", rh.Backend.Name)
 		resp, err := transport.RoundTrip(r)
 		beTimer.End(err)
 		if err != nil {
@@ -107,7 +106,7 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 func (rh *requestHandler) getTransportForBackend(ctx context.Context) *http.Transport {
 	//If we always use TLS use the TLS transport
 	if rh.Backend.TLSOnly {
-		log.Debug("tlsonly transport")
+		log.Debug("tlsonly transport for backend ", rh.Backend.Name)
 		return rh.TLSTransport
 	}
 
@@ -115,10 +114,10 @@ func (rh *requestHandler) getTransportForBackend(ctx context.Context) *http.Tran
 	useHttps := plugin.GetUseHttpsContext(ctx)
 	switch useHttps {
 	case true:
-		log.Debug("https transport from context")
+		log.Debug("https transport from context for backend ", rh.Backend.Name)
 		return rh.TLSTransport
 	default:
-		log.Debug("Non-TLS transport")
+		log.Debug("Non-TLS transport for backend ", rh.Backend.Name)
 		return rh.Transport
 	}
 }
