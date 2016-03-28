@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"crypto/tls"
+	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
 )
@@ -23,6 +25,8 @@ func IsKnownHealthCheck(healthcheck string) bool {
 		return true
 	case "http-get":
 		return true
+	case "https-get":
+		return true
 	default:
 		return false
 	}
@@ -30,14 +34,19 @@ func IsKnownHealthCheck(healthcheck string) bool {
 
 //KnownHealthChecks returns the names of the health checks supported bt the toolkit
 func KnownHealthChecks() string {
-	return "none, http-get"
+	return "none, http-get,https-get"
 }
 
-func healthy(endpoint string) <-chan bool {
+func healthy(endpoint string, transport *http.Transport) <-chan bool {
 	statusChannel := make(chan bool)
+
+	client := &http.Client{
+		Transport: transport,
+	}
+
 	go func() {
 
-		resp, err := http.Get(endpoint)
+		resp, err := client.Get(endpoint)
 		if err != nil {
 			log.Warn("Error doing get on healthcheck endpoint ", endpoint, " : ", err.Error())
 			statusChannel <- false
@@ -63,9 +72,59 @@ func healthy(endpoint string) <-chan bool {
 	return statusChannel
 }
 
-func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
+func makeCertPool(caCertPath string) *x509.CertPool {
+	pool := x509.NewCertPool()
 
-	url := fmt.Sprintf("http://%s:%d%s", serverConfig.Address, serverConfig.Port, serverConfig.PingURI)
+	pemData, err := ioutil.ReadFile(caCertPath)
+	if err != nil {
+		log.Warn("Error creating CA Cert Poll for health check: ", err.Error())
+		return nil
+	}
+
+	ok := pool.AppendCertsFromPEM(pemData)
+	if !ok {
+		log.Warn("Error append pem data to cert pool for health check: ", err.Error())
+		return nil
+	}
+
+	return pool
+}
+
+func makeTransportForHealthCheck(https bool, caCertPath string) *http.Transport {
+	defaultTransport := &http.Transport{DisableKeepAlives: false, DisableCompression: false}
+	//Non-https case
+	if https == false {
+		return defaultTransport
+	}
+
+	if caCertPath == "" {
+		log.Info("Using default transport for https health check - will work only for known CAs")
+		log.Info("For self signed certs specify -cacert-path in your backend configuration.")
+		return defaultTransport
+	}
+
+	pool := makeCertPool(caCertPath)
+	if pool == nil {
+		log.Warn("Unable to create cert pool based on configuration - using default transport")
+		return defaultTransport
+	}
+
+	log.Info("using custom transport for health check")
+	tlsConfig := &tls.Config{RootCAs: pool}
+	return &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig}
+
+}
+
+func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool, https bool) func() {
+
+	var url string
+	transport := makeTransportForHealthCheck(https, lbEndpoint.CACertPath)
+	if https {
+		url = fmt.Sprintf("https://%s:%d%s", serverConfig.Address, serverConfig.Port, serverConfig.PingURI)
+	} else {
+		url = fmt.Sprintf("http://%s:%d%s", serverConfig.Address, serverConfig.Port, serverConfig.PingURI)
+	}
+
 	log.Info("Setting healthcheck url to ", url)
 	healthCheckInterval := time.Duration(serverConfig.HealthCheckInterval) * time.Millisecond
 
@@ -74,7 +133,7 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 			time.Sleep(healthCheckInterval)
 			log.Debug("checking health")
 			select {
-			case healthStatus := <-healthy(url):
+			case healthStatus := <-healthy(url, transport):
 				if !healthStatus {
 					log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
 					lbEndpoint.MarkLoadBalancerEndpointUp(false)
@@ -107,6 +166,9 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 		return noop
 	case "http-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop)
+		return httpGet(lbEndpoint, serverConfig, loop, false)
+	case "https-get":
+		log.Debug("returning http-get health check")
+		return httpGet(lbEndpoint, serverConfig, loop, true)
 	}
 }

@@ -63,7 +63,7 @@ func makeTestBackend(t *testing.T, testServerURL string, loadBalancerPolicyName 
 
 	var b backend
 	b.Name = "test-backend"
-	loadBalancer, err := instantiateLoadBalancer(loadBalancerPolicyName, b.Name, servers)
+	loadBalancer, err := instantiateLoadBalancer(loadBalancerPolicyName, b.Name, "", servers)
 	if err != nil {
 		t.Log("Error instantiating test load balancer ", err)
 		t.FailNow()

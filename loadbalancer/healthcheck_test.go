@@ -15,6 +15,8 @@ import (
 	"github.com/xtracdev/xavi/config"
 )
 
+var standardTransport = &http.Transport{DisableKeepAlives: false, DisableCompression: false}
+
 func TestIsKnownHealthCheck(t *testing.T) {
 	assert.True(t, IsKnownHealthCheck("none"))
 	assert.True(t, IsKnownHealthCheck("http-get"))
@@ -34,7 +36,7 @@ func TestHealthy(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	healthChan := healthy(ts.URL + "/foo")
+	healthChan := healthy(ts.URL+"/foo", standardTransport)
 
 	select {
 	case status := <-healthChan:
@@ -43,7 +45,7 @@ func TestHealthy(t *testing.T) {
 		t.Fail()
 	}
 
-	healthChan = healthy("http://localhost:666/foo")
+	healthChan = healthy("http://localhost:666/foo", standardTransport)
 	select {
 	case status := <-healthChan:
 		assert.False(t, status)
@@ -60,7 +62,7 @@ func TestHealthyTimeout(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	healthChan := healthy(ts.URL + "/foo")
+	healthChan := healthy(ts.URL+"/foo", standardTransport)
 
 	select {
 	case status := <-healthChan:

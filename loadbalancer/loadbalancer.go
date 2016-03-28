@@ -9,10 +9,11 @@ import (
 //LoadBalancerEndpoint contains the information about an endpoint needed by the load balancer
 //for handing connections to a consumer
 type LoadBalancerEndpoint struct {
-	Address string
-	PingURI string
-	Up      bool
-	mu      sync.RWMutex
+	Address    string
+	PingURI    string
+	Up         bool
+	CACertPath string
+	mu         sync.RWMutex
 }
 
 //IsUp reads the status of the endpoint. The function is safe for simultaneous use by multiple goroutines.
@@ -39,5 +40,5 @@ type LoadBalancer interface {
 
 //LoadBalancerFactory defines an interface for instantiating load balancers.
 type LoadBalancerFactory interface {
-	NewLoadBalancer(name string, servers []config.ServerConfig) (LoadBalancer, error)
+	NewLoadBalancer(name, caCertPath string, servers []config.ServerConfig) (LoadBalancer, error)
 }

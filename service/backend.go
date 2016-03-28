@@ -21,13 +21,13 @@ type backend struct {
 
 var ErrCACertFile = errors.New("CACert file contained no certificates")
 
-func instantiateLoadBalancer(policyName string, backendName string, servers []config.ServerConfig) (loadbalancer.LoadBalancer, error) {
+func instantiateLoadBalancer(policyName string, backendName, caCertPath string, servers []config.ServerConfig) (loadbalancer.LoadBalancer, error) {
 	factory := loadbalancer.ObtainFactoryForLoadBalancer(policyName)
 	if policyName == "" || factory == nil {
 		factory = new(loadbalancer.RoundRobinLoadBalancerFactory)
 	}
 
-	return factory.NewLoadBalancer(backendName, servers)
+	return factory.NewLoadBalancer(backendName, caCertPath, servers)
 }
 
 func buildBackends(kvs kvstore.KVStore, names []string) ([]*backend, error) {
@@ -69,7 +69,7 @@ func buildBackend(kvs kvstore.KVStore, name string) (*backend, error) {
 
 	}
 
-	loadBalancer, err := instantiateLoadBalancer(backendConfig.LoadBalancerPolicy, name, servers)
+	loadBalancer, err := instantiateLoadBalancer(backendConfig.LoadBalancerPolicy, name, backendConfig.CACertPath, servers)
 	if err != nil {
 		return nil, err
 	}
