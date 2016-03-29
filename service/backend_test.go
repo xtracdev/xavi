@@ -26,3 +26,20 @@ func TestBuildBackendWithUnknownName(t *testing.T) {
 	_, err := buildBackend(testKVS, "no such backend")
 	assert.NotNil(t, err)
 }
+
+func TestBuildTLSBackend(t *testing.T) {
+	var testKVS = initKVStore(t)
+	be, err := buildBackend(testKVS, "be-tls")
+	if assert.Nil(t, err) {
+		assert.Equal(t, true, be.TLSOnly)
+		assert.NotNil(t, be.CACert)
+	}
+}
+
+func TestBuildTLSBackendBadCert(t *testing.T) {
+	var testKVS = initKVStore(t)
+	_, err := buildBackend(testKVS, "be-tls-bogus-cert")
+	if assert.NotNil(t, err) {
+		t.Log(err.Error())
+	}
+}

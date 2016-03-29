@@ -12,6 +12,8 @@ type BackendConfig struct {
 	Name               string
 	ServerNames        []string
 	LoadBalancerPolicy string
+	CACertPath         string
+	TLSOnly            bool
 }
 
 //JSONToBackend unmarshals a JSON representation of a BackendCOnfig

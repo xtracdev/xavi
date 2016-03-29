@@ -1,6 +1,7 @@
 mb.log
 mb.pid
 xavi
+xaviconfigfile
 docker/xavi-alpine/xavi
 coverage.json
 coverage.html

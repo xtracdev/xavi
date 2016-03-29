@@ -1,13 +1,16 @@
 package commands
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/loadbalancer"
+	"os"
 	"strings"
+	log "github.com/Sirupsen/logrus"
 )
 
 //AddBackend provides a CLI compatible command
@@ -15,6 +18,14 @@ type AddBackend struct {
 	UI      cli.Ui
 	KVStore kvstore.KVStore
 }
+
+//ErrBadPathSPec indicates the given CACertPath is invalid. Note at config time we just check
+//that the path is valid. When the listen command is run if the backend is part of a processing path
+//we load the file, check its format and content, and so on.
+var ErrBadPathSpec = errors.New("CA certificate path is invalid or inaccessible")
+
+//ErrMustSupplyCACert indicates a CA Cert Path must be suppied if tlsonly is indicated
+var ErrMustSupplyCACert = errors.New("CA certificate path must be specified if -tls-only is given")
 
 //Help provides detailed command help
 func (ab *AddBackend) Help() string {
@@ -25,6 +36,8 @@ func (ab *AddBackend) Help() string {
 			-name Backend name
 			-servers List of servers to add to backend, e.g. server1,server2,server3 no spaces
 			-load-balancer-policy Load balancer policy name
+			-cacert-path Path to PEM file containing CA cert for backend servers
+			-tls-only Use TSL/HTTPS only when calling server.
 
 	Known load balancers:`
 
@@ -36,12 +49,17 @@ func (ab *AddBackend) Help() string {
 //Run processed the command line argument passed in args for adding
 //a backend configuration to the KV store assocaited with AddBackend
 func (ab *AddBackend) Run(args []string) int {
-	var name, serverList, loadBalancerPolicy string
+	log.Debug("AddBackend run commands ", args)
+	var name, serverList, loadBalancerPolicy, caCertPath string
+	var tlsOnly bool
 	cmdFlags := flag.NewFlagSet("add-backend", flag.ContinueOnError)
 	cmdFlags.Usage = func() { ab.UI.Output(ab.Help()) }
 	cmdFlags.StringVar(&name, "name", "", "")
 	cmdFlags.StringVar(&serverList, "servers", "", "")
 	cmdFlags.StringVar(&loadBalancerPolicy, "load-balancer-policy", "", "")
+	cmdFlags.StringVar(&caCertPath, "cacert-path", "", "")
+	cmdFlags.BoolVar(&tlsOnly, "tls-only", false, "")
+
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -71,10 +89,18 @@ func (ab *AddBackend) Run(args []string) int {
 		return 1
 	}
 
+	//Check cacert and TLS config
+	if err := ab.validCertAndTLS(caCertPath, tlsOnly); err != nil {
+		ab.UI.Error(err.Error())
+		return 1
+	}
+
 	backend := &config.BackendConfig{
 		Name:               name,
 		ServerNames:        strings.Split(serverList, ","),
 		LoadBalancerPolicy: loadBalancerPolicy,
+		TLSOnly: tlsOnly,
+		CACertPath: caCertPath,
 	}
 
 	if err := backend.Store(ab.KVStore); err != nil {
@@ -94,4 +120,19 @@ func (ab *AddBackend) Run(args []string) int {
 //Synopsis gives the synopsis of the AddBackend command
 func (ab *AddBackend) Synopsis() string {
 	return "Define a backend as a collection of servers"
+}
+
+func (ab *AddBackend) validCertAndTLS(caCertPath string, tlsOnly bool) error {
+	log.Debug(fmt.Sprintf("validCertAndTLS cert path %s tlsOnly %v", caCertPath, tlsOnly))
+	if caCertPath != "" {
+		if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
+			return ErrBadPathSpec
+		}
+	}
+
+	if tlsOnly && caCertPath == "" {
+		return ErrMustSupplyCACert
+	}
+
+	return nil
 }
