@@ -23,7 +23,10 @@ func testMakeListBackends(faultyStore bool, withBackend bool) (*bytes.Buffer, *B
 	}
 
 	if withBackend {
-		b := &config.BackendConfig{"b1", []string{"s1", "s2", "s3"}, ""}
+		b := &config.BackendConfig{
+			Name:        "b1",
+			ServerNames: []string{"s1", "s2", "s3"},
+		}
 		b.Store(kvs)
 	}
 

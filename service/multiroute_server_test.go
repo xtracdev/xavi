@@ -109,7 +109,7 @@ func makeBackend(name string, serverConfig config.ServerConfig) *backend {
 	servers := []config.ServerConfig{serverConfig}
 	var b backend
 	b.Name = name
-	loadBalancer, err := instantiateLoadBalancer("round-robin", b.Name, servers)
+	loadBalancer, err := instantiateLoadBalancer("round-robin", b.Name, "", servers)
 	if err != nil {
 		panic(err.Error())
 	}

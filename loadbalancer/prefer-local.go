@@ -87,7 +87,7 @@ func partitionServers(servers []config.ServerConfig) ([]config.ServerConfig, []c
 }
 
 //NewLoadBalancer creates an instance of PreferLocalLoadBalancer
-func (pl *PreferLocalLoadBalancerFactory) NewLoadBalancer(backendName string, servers []config.ServerConfig) (LoadBalancer, error) {
+func (pl *PreferLocalLoadBalancerFactory) NewLoadBalancer(backendName, caCertPath string, servers []config.ServerConfig) (LoadBalancer, error) {
 
 	if backendName == "" {
 		return nil, fmt.Errorf("Expected non-empty backend name")
@@ -110,7 +110,7 @@ func (pl *PreferLocalLoadBalancerFactory) NewLoadBalancer(backendName string, se
 	preferLocalLB.BackendName = backendName
 
 	if len(localServers) > 0 {
-		localLB, err := roundRobinFactory.NewLoadBalancer(backendName, localServers)
+		localLB, err := roundRobinFactory.NewLoadBalancer(backendName, caCertPath, localServers)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,7 @@ func (pl *PreferLocalLoadBalancerFactory) NewLoadBalancer(backendName string, se
 	}
 
 	if len(remoteServers) > 0 {
-		remoteLB, err := roundRobinFactory.NewLoadBalancer(backendName, remoteServers)
+		remoteLB, err := roundRobinFactory.NewLoadBalancer(backendName, caCertPath, remoteServers)
 		if err != nil {
 			return nil, err
 		}

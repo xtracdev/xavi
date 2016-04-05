@@ -164,15 +164,15 @@ func TestPartitionServers(t *testing.T) {
 
 func TestPreferLocalFactory(t *testing.T) {
 	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
-	pllb, err := preferLocalFactory.NewLoadBalancer("", nil)
+	pllb, err := preferLocalFactory.NewLoadBalancer("", "", nil)
 	assert.NotNil(t, err)
 	assert.Nil(t, pllb)
 
-	pllb, err = preferLocalFactory.NewLoadBalancer("foo", nil)
+	pllb, err = preferLocalFactory.NewLoadBalancer("foo", "", nil)
 	assert.NotNil(t, err)
 	assert.Nil(t, pllb)
 
-	pllb, err = preferLocalFactory.NewLoadBalancer("foo", makeTestLocalAndRemoteServers())
+	pllb, err = preferLocalFactory.NewLoadBalancer("foo", "", makeTestLocalAndRemoteServers())
 	assert.Nil(t, err)
 	assert.NotNil(t, pllb)
 }
@@ -180,7 +180,7 @@ func TestPreferLocalFactory(t *testing.T) {
 func TestPreferLocalGetConnectAddress(t *testing.T) {
 	t.Log("Creating prefer-local load balancer")
 	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
-	pllb, err := preferLocalFactory.NewLoadBalancer("foo", makeTestLocalAndRemoteServers())
+	pllb, err := preferLocalFactory.NewLoadBalancer("foo", "", makeTestLocalAndRemoteServers())
 	assert.Nil(t, err)
 	assert.NotNil(t, pllb)
 
@@ -232,7 +232,7 @@ func TestPreferLocalGetConnectAddress(t *testing.T) {
 func TestPrefLocalWithLocalOnly(t *testing.T) {
 	t.Log("Creating prefer-local load balancer")
 	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
-	pllb, err := preferLocalFactory.NewLoadBalancer("foo", makeTestLocalServer())
+	pllb, err := preferLocalFactory.NewLoadBalancer("foo", "", makeTestLocalServer())
 	assert.Nil(t, err)
 	assert.NotNil(t, pllb)
 
@@ -253,7 +253,7 @@ func TestPrefLocalWithLocalOnly(t *testing.T) {
 func TestPrefLocalWithRemoteOnly(t *testing.T) {
 	t.Log("Creating prefer-local load balancer")
 	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
-	pllb, err := preferLocalFactory.NewLoadBalancer("foo", makeTestRemoteServer())
+	pllb, err := preferLocalFactory.NewLoadBalancer("foo", "", makeTestRemoteServer())
 	assert.Nil(t, err)
 	assert.NotNil(t, pllb)
 
@@ -273,7 +273,7 @@ func TestPrefLocalWithRemoteOnly(t *testing.T) {
 func TestPrefLocalWithLocalhost(t *testing.T) {
 	t.Log("Create prefer-local load balancer with localhost and remote servers")
 	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
-	pllb, err := preferLocalFactory.NewLoadBalancer("foo", makeTestLocalhostAndRemoteServers())
+	pllb, err := preferLocalFactory.NewLoadBalancer("foo", "", makeTestLocalhostAndRemoteServers())
 	assert.Nil(t, err)
 	assert.NotNil(t, pllb)
 

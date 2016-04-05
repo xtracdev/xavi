@@ -25,6 +25,8 @@ func testVerifyBackendConfig(b *BackendConfig, t *testing.T) {
 	assert.Equal(t, "s2", b.ServerNames[1])
 	assert.Equal(t, "s3", b.ServerNames[2])
 	assert.Equal(t, "round-robin", b.LoadBalancerPolicy)
+	assert.Equal(t, "", b.CACertPath)
+	assert.Equal(t, false, b.TLSOnly)
 }
 
 func TestBackendStoreAndRetrieve(t *testing.T) {
@@ -41,7 +43,13 @@ func TestBackendStoreAndRetrieve(t *testing.T) {
 	assert.Nil(t, backends)
 
 	//Store
-	b = &BackendConfig{"hello-backend", []string{"s1", "s2", "s3"}, "round-robin"}
+	b = &BackendConfig{
+		Name:"hello-backend",
+		ServerNames:[]string{"s1", "s2", "s3"},
+		LoadBalancerPolicy:"round-robin",
+		CACertPath:"",
+		TLSOnly:false,
+	}
 	err = b.Store(testKVS)
 	assert.Nil(t, err)
 

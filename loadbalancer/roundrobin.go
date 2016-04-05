@@ -26,7 +26,7 @@ type RoundRobinLoadBalancer struct {
 type RoundRobinLoadBalancerFactory struct{}
 
 //NewLoadBalancer creates a new instance of a Round Robin load balancer
-func (rrf *RoundRobinLoadBalancerFactory) NewLoadBalancer(backendName string, servers []config.ServerConfig) (LoadBalancer, error) {
+func (rrf *RoundRobinLoadBalancerFactory) NewLoadBalancer(backendName, caCertPath string, servers []config.ServerConfig) (LoadBalancer, error) {
 	var rrlb RoundRobinLoadBalancer
 
 	if backendName == "" {
@@ -46,6 +46,7 @@ func (rrf *RoundRobinLoadBalancerFactory) NewLoadBalancer(backendName string, se
 		lbEndpoint.Address = fmt.Sprintf("%s:%d", s.Address, s.Port)
 		lbEndpoint.PingURI = s.PingURI
 		lbEndpoint.Up = true
+		lbEndpoint.CACertPath = caCertPath
 
 		log.Info("Spawing health check for address ", lbEndpoint.Address)
 		healthCheckFunction := MakeHealthCheck(lbEndpoint, s, true)

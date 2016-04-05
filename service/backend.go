@@ -2,26 +2,32 @@ package service
 
 import (
 	"bytes"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/loadbalancer"
+	"io/ioutil"
 )
 
 type backend struct {
 	Name         string
 	LoadBalancer loadbalancer.LoadBalancer
+	TLSOnly      bool
+	CACert       *x509.CertPool
 }
 
-func instantiateLoadBalancer(policyName string, backendName string, servers []config.ServerConfig) (loadbalancer.LoadBalancer, error) {
+var ErrCACertFile = errors.New("CACert file contained no certificates")
+
+func instantiateLoadBalancer(policyName string, backendName, caCertPath string, servers []config.ServerConfig) (loadbalancer.LoadBalancer, error) {
 	factory := loadbalancer.ObtainFactoryForLoadBalancer(policyName)
 	if policyName == "" || factory == nil {
 		factory = new(loadbalancer.RoundRobinLoadBalancerFactory)
 	}
 
-	return factory.NewLoadBalancer(backendName, servers)
+	return factory.NewLoadBalancer(backendName, caCertPath, servers)
 }
 
 func buildBackends(kvs kvstore.KVStore, names []string) ([]*backend, error) {
@@ -63,12 +69,19 @@ func buildBackend(kvs kvstore.KVStore, name string) (*backend, error) {
 
 	}
 
-	loadBalancer, err := instantiateLoadBalancer(backendConfig.LoadBalancerPolicy, name, servers)
+	loadBalancer, err := instantiateLoadBalancer(backendConfig.LoadBalancerPolicy, name, backendConfig.CACertPath, servers)
 	if err != nil {
 		return nil, err
 	}
 
 	b.LoadBalancer = loadBalancer
+
+	b.TLSOnly = backendConfig.TLSOnly
+
+	b.CACert, err = createCertPool(backendConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	return &b, nil
 }
@@ -82,4 +95,26 @@ func (b *backend) String() string {
 
 func (b *backend) getConnectAddress() (string, error) {
 	return b.LoadBalancer.GetConnectAddress()
+}
+
+func createCertPool(backendConfig *config.BackendConfig) (*x509.CertPool, error) {
+	if backendConfig.CACertPath == "" {
+		return nil, nil
+	}
+
+	log.Debug("Creating cert pool for backend ", backendConfig.Name)
+
+	pool := x509.NewCertPool()
+
+	pemData, err := ioutil.ReadFile(backendConfig.CACertPath)
+	if err != nil {
+		return nil, err
+	}
+
+	ok := pool.AppendCertsFromPEM(pemData)
+	if !ok {
+		return nil, ErrCACertFile
+	}
+
+	return pool, nil
 }

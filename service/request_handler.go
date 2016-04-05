@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
 	"io"
@@ -18,9 +19,10 @@ type Service interface {
 
 //Request handler has the configuration needed to build an http.Handler for a route and its chained plugins
 type requestHandler struct {
-	Transport   *http.Transport
-	Backend     *backend
-	PluginChain *list.List
+	Transport    *http.Transport
+	TLSTransport *http.Transport
+	Backend      *backend
+	PluginChain  *list.List
 }
 
 func backendName(name string) string {
@@ -44,8 +46,6 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 		timingContributor := rt.StartContributor(backendName(rh.Backend.Name))
 
-		r.URL.Scheme = "http"
-
 		connectString, err := rh.Backend.getConnectAddress()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -53,7 +53,7 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			return
 		}
 
-		log.Debug("connect string is ", connectString)
+		log.Debug("connect string for ", rh.Backend.Name, "is ", connectString)
 		r.URL.Host = connectString
 		r.Host = connectString
 
@@ -63,10 +63,22 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 			serviceName = "backend-call"
 		}
 
+		r.URL.Scheme = "http"
+		log.Debug("Determine transport")
+		var transport = rh.getTransportForBackend(ctx)
+		if transport == rh.TLSTransport {
+			log.Debug("https transport")
+			r.URL.Scheme = "https"
+		}
+
+		log.Debug(r.URL.Scheme, " transport for backend ", rh.Backend.Name)
+
 		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
-		resp, err := rh.Transport.RoundTrip(r)
+		log.Debug("call service ", serviceName, " for backend ", rh.Backend.Name)
+		resp, err := transport.RoundTrip(r)
 		beTimer.End(err)
 		if err != nil {
+			log.Info(err.Error())
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, "Error: %v", err)
 			timingContributor.End(err)
@@ -88,5 +100,24 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		resp.Body.Close()
 
 		timingContributor.End(nil)
+	}
+}
+
+func (rh *requestHandler) getTransportForBackend(ctx context.Context) *http.Transport {
+	//If we always use TLS use the TLS transport
+	if rh.Backend.TLSOnly {
+		log.Debug("tlsonly transport for backend ", rh.Backend.Name)
+		return rh.TLSTransport
+	}
+
+	//Does the context indicate that his particular call will be https?
+	useHttps := plugin.GetUseHttpsContext(ctx)
+	switch useHttps {
+	case true:
+		log.Debug("https transport from context for backend ", rh.Backend.Name)
+		return rh.TLSTransport
+	default:
+		log.Debug("Non-TLS transport for backend ", rh.Backend.Name)
+		return rh.Transport
 	}
 }

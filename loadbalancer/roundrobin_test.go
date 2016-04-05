@@ -9,7 +9,7 @@ import (
 
 func TestNilServersSlice(t *testing.T) {
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
-	_, err := roundRobinFactory.NewLoadBalancer("backend", nil)
+	_, err := roundRobinFactory.NewLoadBalancer("backend", "", nil)
 	assert.NotNil(t, err)
 }
 
@@ -24,14 +24,14 @@ func TestEmptyBackendName(t *testing.T) {
 	servers := []config.ServerConfig{serverConfig}
 
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
-	_, err := roundRobinFactory.NewLoadBalancer("", servers)
+	_, err := roundRobinFactory.NewLoadBalancer("", "", servers)
 	assert.NotNil(t, err)
 }
 
 func TestEmptyServersSlice(t *testing.T) {
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
 	var servers []config.ServerConfig
-	_, err := roundRobinFactory.NewLoadBalancer("backend", servers)
+	_, err := roundRobinFactory.NewLoadBalancer("backend", "", servers)
 	assert.NotNil(t, err)
 }
 
@@ -46,7 +46,7 @@ func TestSingleServerConfig(t *testing.T) {
 	servers := []config.ServerConfig{serverConfig}
 
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
-	rr, err := roundRobinFactory.NewLoadBalancer("backend", servers)
+	rr, err := roundRobinFactory.NewLoadBalancer("backend", "", servers)
 	assert.NotNil(t, rr)
 	assert.Nil(t, err)
 
@@ -75,7 +75,7 @@ func TestMultiServerConfig(t *testing.T) {
 	servers := []config.ServerConfig{serverConfig, serverConfig2}
 
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
-	rr, err := roundRobinFactory.NewLoadBalancer("backend", servers)
+	rr, err := roundRobinFactory.NewLoadBalancer("backend", "", servers)
 	assert.NotNil(t, rr)
 	assert.Nil(t, err)
 
@@ -101,7 +101,7 @@ func TestMarkEndpointDown(t *testing.T) {
 	servers := []config.ServerConfig{serverConfig}
 
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
-	rr, err := roundRobinFactory.NewLoadBalancer("backend", servers)
+	rr, err := roundRobinFactory.NewLoadBalancer("backend", "", servers)
 	assert.NotNil(t, rr)
 	assert.Nil(t, err)
 
