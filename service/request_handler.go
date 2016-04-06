@@ -7,6 +7,7 @@ import (
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
 	"io"
 	"net/http"
 	"strings"
@@ -75,7 +76,15 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
 		log.Debug("call service ", serviceName, " for backend ", rh.Backend.Name)
-		resp, err := transport.RoundTrip(r)
+
+		//resp, err := transport.RoundTrip(r)
+		client := &http.Client{
+			Transport: transport,
+		}
+
+		r.RequestURI = "" //Must clear when using http.Client
+		resp, err := ctxhttp.Do(ctx, client, r)
+
 		beTimer.End(err)
 		if err != nil {
 			log.Info(err.Error())
