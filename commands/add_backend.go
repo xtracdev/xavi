@@ -4,13 +4,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/cli"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/loadbalancer"
 	"os"
 	"strings"
-	log "github.com/Sirupsen/logrus"
 )
 
 //AddBackend provides a CLI compatible command
@@ -99,8 +99,8 @@ func (ab *AddBackend) Run(args []string) int {
 		Name:               name,
 		ServerNames:        strings.Split(serverList, ","),
 		LoadBalancerPolicy: loadBalancerPolicy,
-		TLSOnly: tlsOnly,
-		CACertPath: caCertPath,
+		TLSOnly:            tlsOnly,
+		CACertPath:         caCertPath,
 	}
 
 	if err := backend.Store(ab.KVStore); err != nil {

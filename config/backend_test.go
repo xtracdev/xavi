@@ -44,11 +44,11 @@ func TestBackendStoreAndRetrieve(t *testing.T) {
 
 	//Store
 	b = &BackendConfig{
-		Name:"hello-backend",
-		ServerNames:[]string{"s1", "s2", "s3"},
-		LoadBalancerPolicy:"round-robin",
-		CACertPath:"",
-		TLSOnly:false,
+		Name:               "hello-backend",
+		ServerNames:        []string{"s1", "s2", "s3"},
+		LoadBalancerPolicy: "round-robin",
+		CACertPath:         "",
+		TLSOnly:            false,
 	}
 	err = b.Store(testKVS)
 	assert.Nil(t, err)
