@@ -94,3 +94,6 @@ info: [http:3100] ::ffff:127.0.0.1:50575 => GET /hello
 
 The [Xavi Sample](https://github.com/xtracdev/xavi-sample) project shows how to use the Xavi toolkit to create a RESTful
 facade on top of a SOAP service.
+
+The Xavi sample also shows how to integrate with an HTTPs backend, and how to deal with timeouts and
+cancellations.

@@ -104,9 +104,19 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 		beTimer.End(err)
 		if err != nil {
-			incrementErrorCounts(err)
+			go incrementErrorCounts(err)
 			log.Info(err.Error())
-			w.WriteHeader(http.StatusServiceUnavailable)
+
+			switch err {
+			case context.Canceled:
+				w.WriteHeader(http.StatusInternalServerError)
+			case context.DeadlineExceeded:
+				w.WriteHeader(http.StatusGatewayTimeout)
+			default:
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+
+
 			fmt.Fprintf(w, "Error: %v", err)
 			timingContributor.End(err)
 			return
