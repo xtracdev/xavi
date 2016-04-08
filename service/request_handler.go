@@ -2,15 +2,33 @@ package service
 
 import (
 	"container/list"
+	"expvar"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
 	"io"
 	"net/http"
 	"strings"
 )
+
+var contextCounts = expvar.NewMap("contextCounts")
+
+func incCounter(counterName string) {
+	contextCounts.Add(counterName, 1)
+	metrics.IncrCounter([]string{counterName}, 1.0)
+}
+
+func incrementErrorCounts(err error) {
+	if err == context.Canceled {
+		incCounter("cancelled-count")
+	} else if err == context.DeadlineExceeded {
+		incCounter("timeout-count")
+	}
+}
 
 //Service represents a runnable service
 type Service interface {
@@ -75,11 +93,30 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 		beTimer := timingContributor.StartServiceCall(serviceName, connectString)
 		log.Debug("call service ", serviceName, " for backend ", rh.Backend.Name)
-		resp, err := transport.RoundTrip(r)
+
+		//resp, err := transport.RoundTrip(r)
+		client := &http.Client{
+			Transport: transport,
+		}
+
+		r.RequestURI = "" //Must clear when using http.Client
+		resp, err := ctxhttp.Do(ctx, client, r)
+
 		beTimer.End(err)
 		if err != nil {
+			go incrementErrorCounts(err)
 			log.Info(err.Error())
-			w.WriteHeader(http.StatusServiceUnavailable)
+
+			switch err {
+			case context.Canceled:
+				w.WriteHeader(http.StatusInternalServerError)
+			case context.DeadlineExceeded:
+				w.WriteHeader(http.StatusGatewayTimeout)
+			default:
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+
+
 			fmt.Fprintf(w, "Error: %v", err)
 			timingContributor.End(err)
 			return
