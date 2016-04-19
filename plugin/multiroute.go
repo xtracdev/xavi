@@ -29,8 +29,6 @@ type MultiBackendAdapter struct {
 	Handler           MultiBackendHandler
 }
 
-
-
 func (mra *MultiBackendAdapter) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
 }
