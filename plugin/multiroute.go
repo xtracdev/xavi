@@ -35,7 +35,6 @@ func (mra *MultiBackendAdapter) ServeHTTPContext(ctx context.Context, w http.Res
 
 //ToHandlerFunc converts a MultiBackendAdapter to an http.HandlerFunc
 func (mra *MultiBackendAdapter) ToHandlerFunc() ContextHandlerFunc {
-	println("ToHandlerFunc called, all right?")
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
 	}
