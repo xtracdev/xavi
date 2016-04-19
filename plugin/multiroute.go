@@ -26,25 +26,20 @@ func (h MultiBackendHandlerFunc) MultiBackendServeHTTP(bhMap BackendHandlerMap, 
 //the standard HTTP handler function for use with golang's HTTP functions.
 type MultiBackendAdapter struct {
 	BackendHandlerCtx BackendHandlerMap
-	Ctx               context.Context
 	Handler           MultiBackendHandler
 }
 
-//ServeHTTP provides HTTP handling via injecting context into a MultiBackendHandler
-func (mra *MultiBackendAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, mra.Ctx, w, r)
-}
+
 
 func (mra *MultiBackendAdapter) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	mra.Ctx = ctx
-	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, mra.Ctx, w, r)
+	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
 }
 
 //ToHandlerFunc converts a MultiBackendAdapter to an http.HandlerFunc
 func (mra *MultiBackendAdapter) ToHandlerFunc() ContextHandlerFunc {
+	println("ToHandlerFunc called, all right?")
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		mra.Ctx = ctx
-		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, mra.Ctx, w, r)
+		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
 	}
 }
 
