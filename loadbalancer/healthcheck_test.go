@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -213,9 +214,14 @@ func TestMakeHealthCheckUnhealthy(t *testing.T) {
 
 func TestMakeHealthCheckTimeout(t *testing.T) {
 	var called = false
+	var wg sync.WaitGroup
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
+		wg.Add(1)
+		go func() {
+			called = true
+			defer wg.Done()
+		}()
 		time.Sleep(200 * time.Millisecond)
 		fmt.Fprintln(w, "Hello, client")
 	}))
@@ -246,6 +252,7 @@ func TestMakeHealthCheckTimeout(t *testing.T) {
 	healthcheckFn := MakeHealthCheck(lbEndpoint, serverConfig, false)
 	healthcheckFn()
 
+	wg.Wait()
 	assert.True(t, called)
 
 }
