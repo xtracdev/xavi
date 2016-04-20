@@ -116,7 +116,6 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 				w.WriteHeader(http.StatusServiceUnavailable)
 			}
 
-
 			fmt.Fprintf(w, "Error: %v", err)
 			timingContributor.End(err)
 			return
