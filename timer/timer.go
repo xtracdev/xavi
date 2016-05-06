@@ -102,6 +102,7 @@ func (t *EndToEndTimer) ContributorErrors() bool {
 	for _, c := range t.Contributors {
 		if c.errorReported {
 			foundError = true
+			break
 		}
 	}
 	t.RUnlock()
