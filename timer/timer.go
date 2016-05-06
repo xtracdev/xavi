@@ -15,21 +15,23 @@ import (
 //ServiceCall is used to capture a service call made in the context of a Contributor timing.
 type ServiceCall struct {
 	sync.RWMutex
-	Name     string
-	Endpoint string
-	Duration time.Duration
-	Error    string
-	start    time.Time
+	Name          string
+	Endpoint      string
+	Duration      time.Duration
+	Error         string
+	errorReported bool
+	start         time.Time
 }
 
 //Contributor is used to capture sub-timings of note that contribute to the end to end time.
 type Contributor struct {
 	sync.RWMutex
-	Name         string
-	Duration     time.Duration
-	Error        string
-	start        time.Time
-	ServiceCalls []*ServiceCall
+	Name          string
+	Duration      time.Duration
+	Error         string
+	errorReported bool
+	start         time.Time
+	ServiceCalls  []*ServiceCall
 }
 
 //EndToEndTimer is used to capture an end to end timing. Subtimings can be added to
@@ -44,6 +46,7 @@ type EndToEndTimer struct {
 	Contributors     []*Contributor
 	ErrorFree        bool
 	Error            string
+	errorReported    bool
 	start            time.Time
 }
 
@@ -69,8 +72,9 @@ func (t *EndToEndTimer) Stop(err error) {
 	t.Duration = stopTime.Sub(t.start)
 	if err != nil {
 		t.Error = err.Error()
+		t.errorReported = true
 	}
-	t.ErrorFree = len(contribErrors) == 0 && t.Error == ""
+	t.ErrorFree = contribErrors == false && t.errorReported == false
 
 	t.Unlock()
 }
@@ -90,19 +94,19 @@ func (t *EndToEndTimer) StartContributor(name string) *Contributor {
 	return contributor
 }
 
-//ContributorErrors produces a slice of all errors that have been
-//reported by the  contributor subtimings associated with an
-//EndToEndTimer
-func (t *EndToEndTimer) ContributorErrors() []string {
-	var errs []string
+//ContributorErrors returns true if any subtiming has been stopped
+//with an error indication
+func (t *EndToEndTimer) ContributorErrors() bool {
+	var foundError bool
 	t.RLock()
 	for _, c := range t.Contributors {
-		if c.Error != "" {
-			errs = append(errs, c.Error)
+		if c.errorReported {
+			foundError = true
+			break
 		}
 	}
 	t.RUnlock()
-	return errs
+	return foundError
 }
 
 //ToJSONString produces a JSON string representation of an EndToEndTimer, including all of
@@ -134,6 +138,7 @@ func (c *Contributor) End(err error) {
 	c.Duration = time.Now().Sub(c.start)
 	if err != nil {
 		c.Error = err.Error()
+		c.errorReported = true
 	}
 	c.Unlock()
 }
@@ -162,6 +167,7 @@ func (sc *ServiceCall) End(err error) {
 	sc.Duration = time.Now().Sub(sc.start)
 	if err != nil {
 		sc.Error = err.Error()
+		sc.errorReported = true
 	}
 	sc.Unlock()
 }
