@@ -64,7 +64,7 @@ func TimerFromContext(ctx context.Context) *timer.EndToEndTimer {
 
 type TimingWrapper struct{}
 
-func NewTimingWrapper() plugin.Wrapper {
+func NewTimingWrapper(args ...interface{}) plugin.Wrapper {
 	return TimingWrapper{}
 }
 

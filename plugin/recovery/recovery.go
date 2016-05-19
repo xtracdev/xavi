@@ -23,7 +23,7 @@ type RecoveryWrapper struct {
 //NewRecoveryWrapper is the factory function for instantiating a RecoveryWrapper. Note that anyone wanting
 //to customize the RecoveryWrapper with their own logging and error message functions will need to provide
 //their own factory method
-func NewRecoveryWrapper() plugin.Wrapper {
+func NewRecoveryWrapper(args ...interface{}) plugin.Wrapper {
 	return &RecoveryWrapper{
 		RecoveryContext: defaultRecoveryContext,
 	}

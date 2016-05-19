@@ -15,7 +15,7 @@ type route struct {
 	Name                   string
 	URIRoot                string
 	Backends               []*backend
-	WrapperFactories       []plugin.WrapperFactory
+	WrapperFactories       []*plugin.WrapperFactoryContext
 	MsgProps               string
 	MultiBackendPluginName string
 }
@@ -56,7 +56,7 @@ func buildRoute(name string, kvs kvstore.KVStore) (*route, error) {
 	}
 
 	for _, pluginName := range routeConfig.Plugins {
-		factory, err := plugin.LookupWrapperFactory(pluginName)
+		factory, err := plugin.LookupWrapperFactoryCtx(pluginName)
 		if err != nil {
 			return nil, fmt.Errorf("No wrapper factory with name %s in registry", pluginName)
 		}

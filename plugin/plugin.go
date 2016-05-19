@@ -4,10 +4,15 @@ import (
 	"fmt"
 )
 
-var registeredWrapperFactories map[string]WrapperFactory
+var registeredWrapperFactories map[string]*WrapperFactoryContext
+
+type WrapperFactoryContext struct {
+	factory WrapperFactory
+	args    []interface{}
+}
 
 func init() {
-	registeredWrapperFactories = make(map[string]WrapperFactory)
+	registeredWrapperFactories = make(map[string]*WrapperFactoryContext)
 }
 
 //ListPlugins lists the plugins currently registered with
@@ -29,24 +34,29 @@ func RegistryContains(name string) bool {
 
 //RegisterWrapperFactory is a method for registering wrapper factories
 //with the package.
-func RegisterWrapperFactory(name string, factory WrapperFactory) error {
+func RegisterWrapperFactory(name string, factory WrapperFactory, args ...interface{}) error {
 	if name == "" {
 		return fmt.Errorf("Empty name passed to RegisterWrapperFactory")
 	}
 
-	registeredWrapperFactories[name] = factory
+	context := &WrapperFactoryContext{
+		factory: factory,
+		args:    args,
+	}
+
+	registeredWrapperFactories[name] = context
 	return nil
 }
 
-//LookupWrapperFactory looks up the named wrapper factory in the
+//LookupWrapperFactoryCtx looks up the named wrapper factory in the
 //registry, returning an error if the factory is not registered.
-func LookupWrapperFactory(name string) (WrapperFactory, error) {
-	factory, ok := registeredWrapperFactories[name]
+func LookupWrapperFactoryCtx(name string) (*WrapperFactoryContext, error) {
+	factoryCtx, ok := registeredWrapperFactories[name]
 	if !ok {
 		return nil, fmt.Errorf("Factory %s not registered", name)
 	}
 
-	return factory, nil
+	return factoryCtx, nil
 }
 
 //Wrapper defines an interface for things that can wrap http Handlers
@@ -56,16 +66,17 @@ type Wrapper interface {
 
 //WrapperFactory defines a function that can create something that
 //implements Wrapper
-type WrapperFactory func() Wrapper
+type WrapperFactory func(...interface{}) Wrapper
 
-//WrapHandlerFunc wraps a handler function.
-func WrapHandlerFunc(hf ContextHandlerFunc, wrapperFactories []WrapperFactory) ContextHandlerFunc {
+//WrapHandlerFunc wraps a handler function, which is instantiated using the wrapper
+//factory and arguments to the wrapper factory stored in the wrapper factory context
+func WrapHandlerFunc(hf ContextHandlerFunc, wrapperFactories []*WrapperFactoryContext) ContextHandlerFunc {
 	handler := hf
-	for _, factory := range wrapperFactories {
-		if factory == nil {
+	for _, factoryCtx := range wrapperFactories {
+		if factoryCtx == nil {
 			continue
 		}
-		wrapper := factory()
+		wrapper := factoryCtx.factory(factoryCtx.args...)
 		handler = (wrapper.Wrap(handler)).(ContextHandlerFunc)
 	}
 

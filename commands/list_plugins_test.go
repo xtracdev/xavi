@@ -12,7 +12,7 @@ import (
 )
 
 //NewAWrapper instantiates AWrapper
-func NewAWrapper() plugin.Wrapper {
+func NewAWrapper(args ...interface{}) plugin.Wrapper {
 	return new(AWrapper)
 }
 
