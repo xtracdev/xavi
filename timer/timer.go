@@ -40,6 +40,7 @@ type Contributor struct {
 type EndToEndTimer struct {
 	sync.RWMutex
 	Name             string
+	Tags             map[string]string
 	Duration         time.Duration
 	LoggingTimestamp time.Time `json:"time"`
 	TxnId            string
@@ -57,6 +58,7 @@ func NewEndToEndTimer(name string) *EndToEndTimer {
 		TxnId: makeTxnId(),
 		Name:  name,
 		start: time.Now(),
+		Tags:  make(map[string]string),
 	}
 }
 
