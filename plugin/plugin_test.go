@@ -12,12 +12,14 @@ import (
 )
 
 //NewAWrapper instantiates AWrapper
-func NewAWrapper() Wrapper {
+func NewAWrapper(args ...interface{}) Wrapper {
 	return new(AWrapper)
 }
 
 //AWrapper can wrap http handlers
-type AWrapper struct{}
+type AWrapper struct {
+	Args []interface{}
+}
 
 //Wrap wraps http.Handlers with A stuff
 func (aw AWrapper) Wrap(h ContextHandler) ContextHandler {
@@ -33,18 +35,29 @@ func handleCall(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 func TestPluginRegisterPlugins(t *testing.T) {
 
-	err := RegisterWrapperFactory("AWrapper", NewAWrapper)
+	err := RegisterWrapperFactory("AWrapper", NewAWrapper, 1, "2", 3)
 	assert.Nil(t, err)
 
-	var factories []WrapperFactory
-	factory, err := LookupWrapperFactory("AWrapper")
+	var factories []*WrapperFactoryContext
+	factoryCtx, err := LookupWrapperFactoryCtx("AWrapper")
 	assert.Nil(t, err)
+
+	assert.Equal(t, 3, len(factoryCtx.args))
+	arg1, ok := factoryCtx.args[0].(int)
+	if assert.True(t, ok) {
+		assert.Equal(t, 1, arg1)
+	}
+
+	arg2, ok := factoryCtx.args[1].(string)
+	if assert.True(t, ok) {
+		assert.Equal(t, "2", arg2)
+	}
 
 	plugins := ListPlugins()
 	assert.Equal(t, 1, len(plugins))
 	assert.True(t, RegistryContains("AWrapper"))
 
-	factories = append(factories, factory)
+	factories = append(factories, factoryCtx)
 	assert.Equal(t, 1, len(factories))
 	handler := WrapHandlerFunc(handleCall, factories)
 
@@ -73,13 +86,13 @@ func TestPluginRegisterWrapperFactoryWithNoName(t *testing.T) {
 }
 
 func TestPluginLookupUnregisteredWrapperFactory(t *testing.T) {
-	_, err := LookupWrapperFactory("huh?")
+	_, err := LookupWrapperFactoryCtx("huh?")
 	assert.NotNil(t, err)
 }
 
 func TestPluginWrapHandlerFunc(t *testing.T) {
-	var factories []WrapperFactory
-	factory, err := LookupWrapperFactory("AWrapper")
+	var factories []*WrapperFactoryContext
+	factory, err := LookupWrapperFactoryCtx("AWrapper")
 	assert.Nil(t, err)
 	factories = append(factories, factory)
 

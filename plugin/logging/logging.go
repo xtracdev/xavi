@@ -11,7 +11,7 @@ import (
 
 //NewLoggingWrapper is a wrapper factory function that returns
 //a new instance of a LoggingWrapper
-func NewLoggingWrapper() plugin.Wrapper {
+func NewLoggingWrapper(args ...interface{}) plugin.Wrapper {
 	return new(LoggingWrapper)
 }
 
