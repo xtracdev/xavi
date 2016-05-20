@@ -3,6 +3,7 @@ package timer
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -14,6 +15,17 @@ func TestPostitiveDuration(t *testing.T) {
 	assert.False(t, at.errorReported)
 	assert.True(t, at.ErrorFree)
 	assert.Equal(t, "", at.Error)
+}
+
+func TestTagsGetSerialized(t *testing.T) {
+	at := NewEndToEndTimer("foo")
+	at.Tags["foo"] = "1"
+	at.Tags["bar"] = "2"
+	at.Stop(nil)
+
+	s := at.ToJSONString()
+	assert.True(t, strings.Contains(s, `"bar":"2"`), "unexpected bar tag")
+	assert.True(t, strings.Contains(s, `"foo":"1"`), "unexpected foo tag")
 }
 
 func TestContributors(t *testing.T) {
