@@ -7,6 +7,8 @@ import (
 	"github.com/xtracdev/xavi/kvstore"
 )
 
+//TODO - rewrite this module to build and use a ServiceConfig instance instead of a listener name
+
 func readListenerConfig(name string, kvs kvstore.KVStore) (lc *config.ListenerConfig, err error) {
 	lc, err = config.ReadListenerConfig(name, kvs)
 

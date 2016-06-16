@@ -2,19 +2,27 @@ package config
 
 import (
 	"errors"
+	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/kvstore"
 )
 
+//ServiceConfig is the top level structure that joins up all the configuration
+//from the listener def into a single structure, reading the definition from the
+//KVStore
 type ServiceConfig struct {
 	Listener *ListenerConfig
 	Routes   []*ServiceRoute
 }
 
+//ServiceRoute contains the Route definition read from config and the associated
+//backend configs as well
 type ServiceRoute struct {
 	Route    *RouteConfig
 	Backends []*ServiceBackend
 }
 
+//ServiceBackend contains the backend definition and all the linked server
+//definitions for the backend
 type ServiceBackend struct {
 	Backend *BackendConfig
 	Servers []*ServerConfig
@@ -25,7 +33,11 @@ var (
 	ErrNoKVStore      = errors.New("No kv store provided")
 )
 
+//ReadServiceConfig reads all configuration for a given listener and links all the definitions
+//together
 func ReadServiceConfig(listenerName string, kvs kvstore.KVStore) (*ServiceConfig, error) {
+	log.Infof("ReadServiceConfig: Reading service configuration for listener %s", listenerName)
+
 	if listenerName == "" {
 		return nil, ErrNoListenerName
 	}
@@ -44,6 +56,7 @@ func ReadServiceConfig(listenerName string, kvs kvstore.KVStore) (*ServiceConfig
 }
 
 func readStartingWithListener(sc *ServiceConfig, listenerName string, kvs kvstore.KVStore) error {
+	log.Info("ReadServiceConfig: Read listener configuration")
 
 	//Read the listener def from the kv store
 	lc, err := ReadListenerConfig(listenerName, kvs)
@@ -71,6 +84,7 @@ func readStartingWithListener(sc *ServiceConfig, listenerName string, kvs kvstor
 }
 
 func readRouteForListener(sc *ServiceConfig, routeName string, kvs kvstore.KVStore) (*ServiceRoute, error) {
+	log.Infof("ReadServiceConfig: Read route config for %s", routeName)
 	routeConfig, err := ReadRouteConfig(routeName, kvs)
 	if err != nil {
 		return nil, err
@@ -97,6 +111,8 @@ func readRouteForListener(sc *ServiceConfig, routeName string, kvs kvstore.KVSto
 }
 
 func readBackendForRoute(sr *ServiceRoute, backendName string, kvs kvstore.KVStore) (*ServiceBackend, error) {
+	log.Infof("ReadServiceConfig: Read backend config for %s", backendName)
+
 	backendConfig, err := ReadBackendConfig(backendName, kvs)
 	if err != nil {
 		return nil, err
@@ -122,6 +138,8 @@ func readBackendForRoute(sr *ServiceRoute, backendName string, kvs kvstore.KVSto
 }
 
 func readServerForBackend(be *ServiceBackend, serverName string, kvs kvstore.KVStore) (*ServerConfig, error) {
+	log.Infof("ReadServiceConfig: Read server config for %s", serverName)
+
 	serverConfig, err := ReadServerConfig(serverName, kvs)
 	if err != nil {
 		return nil, err
