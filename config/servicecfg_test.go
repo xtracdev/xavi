@@ -20,4 +20,12 @@ func TestMissinKVStore(t *testing.T) {
 func TestBuildServiceConfig(t *testing.T) {
 	kvs := BuildKVStoreTestConfig(t)
 	assert.NotNil(t,kvs)
+	sc,err := ReadServiceConfig("listener",kvs)
+	assert.Nil(t,err)
+	assert.NotNil(t,sc)
+	if assert.NotNil(t,sc.Listener) {
+		listener := sc.Listener
+		assert.Equal(t, "listener", listener.Name)
+		assert.Equal(t, 0, len(sc.Routes))
+	}
 }
