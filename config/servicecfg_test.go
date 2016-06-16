@@ -19,17 +19,24 @@ func TestMissinKVStore(t *testing.T) {
 
 func TestBuildServiceConfig(t *testing.T) {
 	kvs := BuildKVStoreTestConfig(t)
-	assert.NotNil(t,kvs)
-	sc,err := ReadServiceConfig("listener",kvs)
-	assert.Nil(t,err)
-	assert.NotNil(t,sc)
-	if assert.NotNil(t,sc.Listener) {
+	assert.NotNil(t, kvs)
+	sc, err := ReadServiceConfig("listener", kvs)
+	assert.Nil(t, err)
+	assert.NotNil(t, sc)
+	if assert.NotNil(t, sc.Listener) {
 		listener := sc.Listener
 		assert.Equal(t, "listener", listener.Name)
 		if assert.Equal(t, 1, len(sc.Routes)) {
-			assert.Equal(t, "route1",sc.Routes[0].Route.Name)
+			assert.Equal(t, "route1", sc.Routes[0].Route.Name)
 			assert.Equal(t, "/hello", sc.Routes[0].Route.URIRoot)
-			assert.Equal(t, 0, len(sc.Routes[0].Backends))
+			if assert.Equal(t, 1, len(sc.Routes[0].Backends)) {
+				backend := sc.Routes[0].Backends[0]
+				assert.Equal(t, "hello-backend", backend.Backend.Name)
+				if assert.Equal(t, 2, len(backend.Servers)) {
+					assert.Equal(t, "server1", backend.Servers[0].Name)
+					assert.Equal(t, "server2", backend.Servers[1].Name)
+				}
+			}
 		}
 	}
 }

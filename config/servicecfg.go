@@ -35,9 +35,9 @@ func ReadServiceConfig(listenerName string, kvs kvstore.KVStore) (*ServiceConfig
 	}
 	sc := new(ServiceConfig)
 
-	err := readStartingWithListener(sc,listenerName, kvs)
+	err := readStartingWithListener(sc, listenerName, kvs)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	return sc, nil
@@ -64,13 +64,13 @@ func readStartingWithListener(sc *ServiceConfig, listenerName string, kvs kvstor
 			return err
 		}
 
-		sc.Routes = append(sc.Routes,route)
+		sc.Routes = append(sc.Routes, route)
 	}
 
 	return nil
 }
 
-func readRouteForListener(sc *ServiceConfig, routeName string , kvs kvstore.KVStore) (*ServiceRoute,error) {
+func readRouteForListener(sc *ServiceConfig, routeName string, kvs kvstore.KVStore) (*ServiceRoute, error) {
 	routeConfig, err := ReadRouteConfig(routeName, kvs)
 	if err != nil {
 		return nil, err
@@ -84,9 +84,52 @@ func readRouteForListener(sc *ServiceConfig, routeName string , kvs kvstore.KVSt
 	sr.Route = routeConfig
 
 	//Iterate through the backends associated with the route
-	//for _, backendName := routeConfig.Backends {
-	//	err = readBackendConfig(backendName)
-	//}
+	for _, backendName := range routeConfig.Backends {
+		backend, err := readBackendForRoute(sr, backendName, kvs)
+		if err != nil {
+			return nil, err
+		}
 
-	return sr,nil
+		sr.Backends = append(sr.Backends, backend)
+	}
+
+	return sr, nil
+}
+
+func readBackendForRoute(sr *ServiceRoute, backendName string, kvs kvstore.KVStore) (*ServiceBackend, error) {
+	backendConfig, err := ReadBackendConfig(backendName, kvs)
+	if err != nil {
+		return nil, err
+	}
+
+	if backendConfig == nil {
+		return nil, errors.New("Backend defnition for '" + backendName + "' not found")
+	}
+
+	be := new(ServiceBackend)
+	be.Backend = backendConfig
+
+	for _, serverName := range backendConfig.ServerNames {
+		server, err := readServerForBackend(be, serverName, kvs)
+		if err != nil {
+			return nil, err
+		}
+
+		be.Servers = append(be.Servers, server)
+	}
+
+	return be, nil
+}
+
+func readServerForBackend(be *ServiceBackend, serverName string, kvs kvstore.KVStore) (*ServerConfig, error) {
+	serverConfig, err := ReadServerConfig(serverName, kvs)
+	if err != nil {
+		return nil, err
+	}
+
+	if serverConfig == nil {
+		return nil, errors.New("No definition for server '" + serverName + "' found")
+	}
+
+	return serverConfig, err
 }
