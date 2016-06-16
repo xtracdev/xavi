@@ -40,3 +40,16 @@ func TestBuildServiceConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestActiveConfigLookup(t *testing.T) {
+	kvs := BuildKVStoreTestConfig(t)
+	assert.NotNil(t, kvs)
+	sc, err := ReadServiceConfig("listener", kvs)
+	assert.Nil(t, err)
+	assert.NotNil(t, sc)
+
+	RecordActiveConfig(sc)
+
+	sc2 := ActiveConfigForListener("listener")
+	assert.NotNil(t, sc2)
+}
