@@ -7,12 +7,12 @@ import (
 
 type ServiceConfig struct {
 	Listener *ListenerConfig
-	Routes   []ServiceRoute
+	Routes   []*ServiceRoute
 }
 
 type ServiceRoute struct {
 	Route    *RouteConfig
-	Backends []ServiceBackend
+	Backends []*ServiceBackend
 }
 
 type ServiceBackend struct {
@@ -58,17 +58,19 @@ func readStartingWithListener(sc *ServiceConfig, listenerName string, kvs kvstor
 	sc.Listener = lc
 
 	//Iterate through the routes and populate the slice of route configs
-	/*for _, routeName := range lc.RouteNames {
-		err = readRouteForListener(sc, routeName, kvs)
+	for _, routeName := range lc.RouteNames {
+		route, err := readRouteForListener(sc, routeName, kvs)
 		if err != nil {
 			return err
 		}
-	}*/
+
+		sc.Routes = append(sc.Routes,route)
+	}
 
 	return nil
 }
 
-/*func readRouteForListener(sc *ServiceConfig, routeName string , kvs kvstore.KVStore) error {
+func readRouteForListener(sc *ServiceConfig, routeName string , kvs kvstore.KVStore) (*ServiceRoute,error) {
 	routeConfig, err := ReadRouteConfig(routeName, kvs)
 	if err != nil {
 		return nil, err
@@ -82,7 +84,9 @@ func readStartingWithListener(sc *ServiceConfig, listenerName string, kvs kvstor
 	sr.Route = routeConfig
 
 	//Iterate through the backends associated with the route
-	for _, backendName := routeConfig.Backends {
-		err = readBackendConfig(backendName)
-	}
-}*/
+	//for _, backendName := routeConfig.Backends {
+	//	err = readBackendConfig(backendName)
+	//}
+
+	return sr,nil
+}

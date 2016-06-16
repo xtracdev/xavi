@@ -26,6 +26,10 @@ func TestBuildServiceConfig(t *testing.T) {
 	if assert.NotNil(t,sc.Listener) {
 		listener := sc.Listener
 		assert.Equal(t, "listener", listener.Name)
-		assert.Equal(t, 0, len(sc.Routes))
+		if assert.Equal(t, 1, len(sc.Routes)) {
+			assert.Equal(t, "route1",sc.Routes[0].Route.Name)
+			assert.Equal(t, "/hello", sc.Routes[0].Route.URIRoot)
+			assert.Equal(t, 0, len(sc.Routes[0].Backends))
+		}
 	}
 }
