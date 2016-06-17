@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/mitchellh/cli"
+	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"github.com/xtracdev/xavi/service"
 	"os"
@@ -75,6 +76,16 @@ func (l *Listen) Run(args []string) int {
 		defer pprof.StopCPUProfile()
 	}
 
+	//Read and record the listener config so it is available to the plugin chain
+	serviceConfig, err := config.ReadServiceConfig(listener, l.KVStore)
+	if err != nil {
+		l.UI.Error(err.Error())
+		return 1
+	}
+
+	config.RecordActiveConfig(serviceConfig)
+
+	//Build the service for the named listener
 	s, err := service.BuildServiceForListener(listener, address, l.KVStore)
 	if err != nil {
 		l.UI.Error(err.Error())
