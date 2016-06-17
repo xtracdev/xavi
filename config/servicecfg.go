@@ -151,3 +151,21 @@ func readServerForBackend(be *ServiceBackend, serverName string, kvs kvstore.KVS
 
 	return serverConfig, err
 }
+
+//LogConfig logs information associated with the ServiceConfig
+func (sc *ServiceConfig) LogConfig() {
+	log.Infof("Logging service config for listener %s:", sc.Listener.Name)
+	log.Infof("%v", *sc.Listener)
+	for _,r := range sc.Routes {
+		log.Infof("route config for %s:", r.Route.Name)
+		log.Infof("%v", *r.Route)
+		for _, b := range r.Backends {
+			log.Infof("backend config for %s:", b.Backend.Name)
+			log.Infof("%v", *b.Backend)
+			for _, s := range b.Servers {
+				log.Infof("server config for %s:", s.Name)
+				log.Infof("%v", *s)
+			}
+		}
+	}
+}

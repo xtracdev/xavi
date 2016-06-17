@@ -15,6 +15,8 @@ func RecordActiveConfig(serviceConfig *ServiceConfig) {
 	}
 
 	activeConfig[serviceConfig.Listener.Name] = serviceConfig
+
+	serviceConfig.LogConfig()
 }
 
 //ActiveConfigForListener returns the ServiceConfig associated with
