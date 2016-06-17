@@ -17,3 +17,15 @@ func RecordActiveConfig(serviceConfig *ServiceConfig) {
 func ActiveConfigForListener(listenerName string) *ServiceConfig {
 	return activeConfig[listenerName]
 }
+
+func ActiveListenerNames() []string {
+	keys := make([]string, len(activeConfig))
+
+	i := 0
+	for k := range activeConfig {
+		keys[i] = k
+		i++
+	}
+
+	return keys
+}

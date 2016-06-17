@@ -52,4 +52,10 @@ func TestActiveConfigLookup(t *testing.T) {
 
 	sc2 := ActiveConfigForListener("listener")
 	assert.NotNil(t, sc2)
+
+	assert.Nil(t, ActiveConfigForListener("flibby-dibby-do"))
+
+	activeListeners := ActiveListenerNames()
+	assert.Equal(t, 1, len(activeListeners))
+	assert.Equal(t, "listener", activeListeners[0])
 }
