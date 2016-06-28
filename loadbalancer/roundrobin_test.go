@@ -50,11 +50,17 @@ func TestSingleServerConfig(t *testing.T) {
 	assert.NotNil(t, rr)
 	assert.Nil(t, err)
 
+	address := fmt.Sprintf("%s:%d", serverConfig.Address, serverConfig.Port)
 	for i := 0; i < 5; i++ {
 		addr, err := rr.GetConnectAddress()
 		assert.Nil(t, err)
-		assert.Equal(t, fmt.Sprintf("%s:%d", serverConfig.Address, serverConfig.Port), addr)
+		assert.Equal(t, address, addr)
 	}
+
+	h, u := rr.GetEndpoints()
+	assert.Equal(t, 0, len(u))
+	assert.Equal(t, 1, len(h))
+	assert.Equal(t, address, h[0])
 }
 
 func TestMultiServerConfig(t *testing.T) {
@@ -116,6 +122,10 @@ func TestMarkEndpointDown(t *testing.T) {
 
 	err = rr.MarkEndpointDown("server1.domain.com:11000")
 	assert.Nil(t, err)
+
+	h, u := rr.GetEndpoints()
+	assert.Equal(t, 0, len(h))
+	assert.Equal(t, 1, len(u))
 
 	_, err = rr.GetConnectAddress()
 	assert.NotNil(t, err)

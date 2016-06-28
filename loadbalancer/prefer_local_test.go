@@ -227,6 +227,10 @@ func TestPreferLocalGetConnectAddress(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, joinHostAndPort(host, testPort), address)
 
+	h, u := pllb.GetEndpoints()
+	assert.Equal(t, 0, len(u))
+	assert.Equal(t, 2, len(h))
+
 }
 
 func TestPrefLocalWithLocalOnly(t *testing.T) {
