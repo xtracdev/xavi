@@ -136,3 +136,21 @@ func (rr *RoundRobinLoadBalancer) changeEndpointStatus(connectAddress string, st
 	return fmt.Errorf("Address not found in load balancing pool: %s", connectAddress)
 
 }
+
+//GetEndpoints returns the endpoints associated with the load balancer, partitioning
+//the set of endpoints into healthy and unhealthy endpoints
+func (rr *RoundRobinLoadBalancer) GetEndpoints() ([]string, []string) {
+	var healthy, unhealthy []string
+	rr.servers.Do(func(s interface{}) {
+		loadBalancingEndpoint, ok := s.(*LoadBalancerEndpoint)
+		if ok {
+			if loadBalancingEndpoint.Up {
+				healthy = append(healthy, loadBalancingEndpoint.Address)
+			} else {
+				unhealthy = append(healthy, loadBalancingEndpoint.Address)
+			}
+		}
+	})
+
+	return healthy, unhealthy
+}

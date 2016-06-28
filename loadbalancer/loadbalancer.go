@@ -36,6 +36,7 @@ type LoadBalancer interface {
 	GetConnectAddress() (string, error)
 	MarkEndpointDown(string) error
 	MarkEndpointUp(string) error
+	GetEndpoints() (healthy []string, unhealthy []string)
 }
 
 //LoadBalancerFactory defines an interface for instantiating load balancers.

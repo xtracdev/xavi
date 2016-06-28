@@ -11,20 +11,19 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"golang.org/x/net/context"
-	"github.com/xtracdev/xavi/monitoring"
 )
 
 //Managed service contains the configuration we boot a listener from.
 type managedService struct {
-	Address      string
-	ListenerName string
-	Routes       []route
-	HealthCheckContext *monitoring.HealthCheckContext
+	Address            string
+	ListenerName       string
+	Routes             []route
+	HealthCheckContext *HealthCheckContext
 }
 
 func newManagedService() *managedService {
 	ms := managedService{
-		HealthCheckContext: &monitoring.HealthCheckContext{},
+		HealthCheckContext: &HealthCheckContext{},
 	}
 
 	return &ms
@@ -279,6 +278,8 @@ func (ms *managedService) Run() {
 //AddRoute adds a route to the managed service
 func (ms *managedService) AddRoute(route *route) {
 	ms.Routes = append(ms.Routes, *route)
+	ms.HealthCheckContext.AddRouteContext(route)
+
 }
 
 //String provides a string representation of the configuration associated with the managed service.
