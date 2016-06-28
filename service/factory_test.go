@@ -58,9 +58,47 @@ func TestServerFactory(t *testing.T) {
 	assert.Equal(t, "hello-backend", health.Routes[0].Backends[0].Name)
 	assert.Equal(t, 2, len(health.Routes[0].Backends[0].HealthyDependencies))
 	assert.Equal(t, "localhost:3000", health.Routes[0].Backends[0].HealthyDependencies[0])
-	assert.Equal(t, "localhost:3000", health.Routes[0].Backends[0].HealthyDependencies[0])
+	assert.Equal(t, "localhost:3100", health.Routes[0].Backends[0].HealthyDependencies[1])
 	assert.Equal(t, true, health.Routes[0].Backends[0].Up)
 	assert.Equal(t, 0, len(health.Routes[0].Backends[0].UnhealthyDependencies))
+
+}
+
+func TestHealthCheckMultiBackendRoute(t *testing.T) {
+	var testKVS = initKVStore(t)
+	service, err := BuildServiceForListener("l2", "0.0.0.0:8000", testKVS)
+	assert.Nil(t, err)
+
+	ms, ok := service.(*managedService)
+	assert.True(t, ok)
+	hch := ms.HealthCheckContext.HealthHandler()
+	assert.NotNil(t, hch)
+
+	ts := httptest.NewServer(hch)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL)
+	assert.Nil(t, err)
+	respbytes, _ := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+
+	var health HealthResponse
+	err = json.Unmarshal(respbytes, &health)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "l2", health.ListenerName)
+	assert.Equal(t, 1, len(health.Routes))
+	assert.Equal(t, "r2", health.Routes[0].Name)
+	assert.True(t, health.Routes[0].Up)
+	assert.Equal(t, 2, len(health.Routes[0].Backends))
+
+	be1 := health.Routes[0].Backends[0]
+	assert.Equal(t, "be1", be1.Name)
+	assert.True(t,be1.Up)
+	assert.Equal(t, 2, len(be1.HealthyDependencies))
+	assert.Equal(t,0, len(be1.UnhealthyDependencies))
+	assert.Equal(t, "localhost:3000", be1.HealthyDependencies[0])
+	assert.Equal(t, "localhost:3100", be1.HealthyDependencies[1])
 
 }
 
