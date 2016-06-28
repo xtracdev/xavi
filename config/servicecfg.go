@@ -156,7 +156,7 @@ func readServerForBackend(be *ServiceBackend, serverName string, kvs kvstore.KVS
 func (sc *ServiceConfig) LogConfig() {
 	log.Infof("Logging service config for listener %s:", sc.Listener.Name)
 	log.Infof("%v", *sc.Listener)
-	for _,r := range sc.Routes {
+	for _, r := range sc.Routes {
 		log.Infof("route config for %s:", r.Route.Name)
 		log.Infof("%v", *r.Route)
 		for _, b := range r.Backends {

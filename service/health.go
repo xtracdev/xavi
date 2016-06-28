@@ -8,8 +8,14 @@ import (
 )
 
 type routeContext struct {
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Up       bool   `json:"up"`
+	Backends []backendContext
+}
+
+type backendContext struct {
 	Name                  string   `json:"name"`
-	URL                   string   `json:"url"`
 	Up                    bool     `json:"up"`
 	HealthyDependencies   []string `json:healthyDependencies`
 	UnhealthyDependencies []string `json:unhealthyDependencies`
@@ -36,15 +42,30 @@ func (hcc *HealthCheckContext) HealthHandler() http.HandlerFunc {
 			rc := routeContext{
 				Name: r.Name,
 				URL:  r.URIRoot,
+				Up:   true,
 			}
 
+			unhealthyBackends := 0
 			for _, b := range r.Backends {
+				bctx := backendContext{
+					Name: b.Name,
+				}
 				log.Infof("Backend %s", b.Name)
 				h, uh := b.LoadBalancer.GetEndpoints()
 				log.Infof("Healthy: %s, unhealthy: %s", h, uh)
-				rc.Up = len(h) > 0
-				rc.HealthyDependencies = h
-				rc.UnhealthyDependencies = uh
+				bctx.Up = len(h) > 0
+				bctx.HealthyDependencies = h
+				bctx.UnhealthyDependencies = uh
+
+				rc.Backends = append(rc.Backends, bctx)
+
+				if !bctx.Up {
+					unhealthyBackends++
+				}
+			}
+
+			if unhealthyBackends > 0 {
+				rc.Up = false
 			}
 
 			hr.Routes = append(hr.Routes, rc)
