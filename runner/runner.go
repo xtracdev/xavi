@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"github.com/xtracdev/xavi/info"
 )
 
 //Build version is set via the command line, e.g.
@@ -110,6 +111,8 @@ func Run(args []string, pluginRegistrationFn func()) {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+
+	info.BuildVersion = BuildVersion
 
 	log.Info(version)
 	fireUpPProf()

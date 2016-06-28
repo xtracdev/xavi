@@ -11,6 +11,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
 	"golang.org/x/net/context"
+	"github.com/xtracdev/xavi/monitoring"
 )
 
 //Managed service contains the configuration we boot a listener from.
@@ -18,6 +19,15 @@ type managedService struct {
 	Address      string
 	ListenerName string
 	Routes       []route
+	HealthCheckContext *monitoring.HealthCheckContext
+}
+
+func newManagedService() *managedService {
+	ms := managedService{
+		HealthCheckContext: &monitoring.HealthCheckContext{},
+	}
+
+	return &ms
 }
 
 //Collect the routes based on URI. A single URI may have multiple routes, but all but one route must
@@ -250,6 +260,9 @@ func (ms *managedService) Run() {
 		}
 		mux.Handle(uri, adapter)
 	}
+
+	//Health check handler
+	mux.HandleFunc("/health", ms.HealthCheckContext.HealthHandler())
 
 	//Expvar handler
 	mux.HandleFunc("/debug/vars", expvarHandler)
