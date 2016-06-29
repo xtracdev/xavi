@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/xtracdev/xavi/config"
+	"github.com/armon/go-metrics"
 )
 
 //LoadBalancerEndpoint contains the information about an endpoint needed by the load balancer
@@ -28,6 +29,11 @@ func (lb *LoadBalancerEndpoint) MarkLoadBalancerEndpointUp(isUp bool) {
 	lb.mu.Lock()
 	defer lb.mu.Unlock()
 	lb.Up = isUp
+	if isUp {
+		metrics.SetGauge([]string{"endpoint",lb.Address},1.0)
+	} else {
+		metrics.SetGauge([]string{"endpoint",lb.Address},0.0)
+	}
 }
 
 //LoadBalancer has methods for handing out connection addressed and marking
