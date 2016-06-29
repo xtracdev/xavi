@@ -77,6 +77,7 @@ func (hcc *HealthCheckContext) HealthHandler() http.HandlerFunc {
 			return
 		}
 
+		rw.Header().Set("Content-Type", "application/json")
 		rw.Write(b)
 	}
 }

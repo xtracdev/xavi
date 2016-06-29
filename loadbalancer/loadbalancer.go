@@ -3,8 +3,8 @@ package loadbalancer
 import (
 	"sync"
 
-	"github.com/xtracdev/xavi/config"
 	"github.com/armon/go-metrics"
+	"github.com/xtracdev/xavi/config"
 )
 
 //LoadBalancerEndpoint contains the information about an endpoint needed by the load balancer
@@ -30,9 +30,9 @@ func (lb *LoadBalancerEndpoint) MarkLoadBalancerEndpointUp(isUp bool) {
 	defer lb.mu.Unlock()
 	lb.Up = isUp
 	if isUp {
-		metrics.SetGauge([]string{"endpoint",lb.Address},1.0)
+		metrics.SetGauge([]string{"endpoint", lb.Address}, 1.0)
 	} else {
-		metrics.SetGauge([]string{"endpoint",lb.Address},0.0)
+		metrics.SetGauge([]string{"endpoint", lb.Address}, 0.0)
 	}
 }
 

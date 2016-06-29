@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/xtracdev/xavi/config"
 	"github.com/armon/go-metrics"
+	"github.com/xtracdev/xavi/config"
 )
 
 var (
@@ -45,7 +45,7 @@ func (rrf *RoundRobinLoadBalancerFactory) NewLoadBalancer(backendName, caCertPat
 
 		lbEndpoint := new(LoadBalancerEndpoint)
 		lbEndpoint.Address = fmt.Sprintf("%s:%d", s.Address, s.Port)
-		metrics.SetGauge([]string{"endpoint",lbEndpoint.Address},1.0)
+		metrics.SetGauge([]string{"endpoint", lbEndpoint.Address}, 1.0)
 		lbEndpoint.PingURI = s.PingURI
 		lbEndpoint.Up = true
 		lbEndpoint.CACertPath = caCertPath
@@ -94,7 +94,7 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 //connect address as up.
 func (rr *RoundRobinLoadBalancer) MarkEndpointUp(connectAddress string) error {
 	log.Infof("mark %s up", connectAddress)
-	metrics.SetGauge([]string{"endpoint",connectAddress},1.0)
+	metrics.SetGauge([]string{"endpoint", connectAddress}, 1.0)
 	return rr.changeEndpointStatus(connectAddress, true)
 }
 
@@ -102,7 +102,7 @@ func (rr *RoundRobinLoadBalancer) MarkEndpointUp(connectAddress string) error {
 //connect address as up.
 func (rr *RoundRobinLoadBalancer) MarkEndpointDown(connectAddress string) error {
 	log.Infof("mark %s down", connectAddress)
-	metrics.SetGauge([]string{"endpoint",connectAddress},0.0)
+	metrics.SetGauge([]string{"endpoint", connectAddress}, 0.0)
 	return rr.changeEndpointStatus(connectAddress, false)
 }
 

@@ -94,9 +94,9 @@ func TestHealthCheckMultiBackendRoute(t *testing.T) {
 
 	be1 := health.Routes[0].Backends[0]
 	assert.Equal(t, "be1", be1.Name)
-	assert.True(t,be1.Up)
+	assert.True(t, be1.Up)
 	assert.Equal(t, 2, len(be1.HealthyDependencies))
-	assert.Equal(t,0, len(be1.UnhealthyDependencies))
+	assert.Equal(t, 0, len(be1.UnhealthyDependencies))
 	assert.Equal(t, "localhost:3000", be1.HealthyDependencies[0])
 	assert.Equal(t, "localhost:3100", be1.HealthyDependencies[1])
 
