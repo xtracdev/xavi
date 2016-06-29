@@ -15,9 +15,18 @@ import (
 
 //Managed service contains the configuration we boot a listener from.
 type managedService struct {
-	Address      string
-	ListenerName string
-	Routes       []route
+	Address            string
+	ListenerName       string
+	Routes             []route
+	HealthCheckContext *HealthCheckContext
+}
+
+func newManagedService() *managedService {
+	ms := managedService{
+		HealthCheckContext: &HealthCheckContext{},
+	}
+
+	return &ms
 }
 
 //Collect the routes based on URI. A single URI may have multiple routes, but all but one route must
@@ -251,6 +260,9 @@ func (ms *managedService) Run() {
 		mux.Handle(uri, adapter)
 	}
 
+	//Health check handler
+	mux.HandleFunc("/health", ms.HealthCheckContext.HealthHandler())
+
 	//Expvar handler
 	mux.HandleFunc("/debug/vars", expvarHandler)
 
@@ -266,6 +278,8 @@ func (ms *managedService) Run() {
 //AddRoute adds a route to the managed service
 func (ms *managedService) AddRoute(route *route) {
 	ms.Routes = append(ms.Routes, *route)
+	ms.HealthCheckContext.AddRouteContext(route)
+
 }
 
 //String provides a string representation of the configuration associated with the managed service.

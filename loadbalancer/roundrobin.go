@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/config"
 )
 
@@ -44,6 +45,7 @@ func (rrf *RoundRobinLoadBalancerFactory) NewLoadBalancer(backendName, caCertPat
 
 		lbEndpoint := new(LoadBalancerEndpoint)
 		lbEndpoint.Address = fmt.Sprintf("%s:%d", s.Address, s.Port)
+		metrics.SetGauge([]string{"endpoint", lbEndpoint.Address}, 1.0)
 		lbEndpoint.PingURI = s.PingURI
 		lbEndpoint.Up = true
 		lbEndpoint.CACertPath = caCertPath
@@ -91,12 +93,16 @@ func (rr *RoundRobinLoadBalancer) GetConnectAddress() (string, error) {
 //MarkEndpointUp marks the endpoint in the load balancer pool associated with the
 //connect address as up.
 func (rr *RoundRobinLoadBalancer) MarkEndpointUp(connectAddress string) error {
+	log.Infof("mark %s up", connectAddress)
+	metrics.SetGauge([]string{"endpoint", connectAddress}, 1.0)
 	return rr.changeEndpointStatus(connectAddress, true)
 }
 
 //MarkEndpointDown marks the endpoint in the load balancer pool associated with the
 //connect address as up.
 func (rr *RoundRobinLoadBalancer) MarkEndpointDown(connectAddress string) error {
+	log.Infof("mark %s down", connectAddress)
+	metrics.SetGauge([]string{"endpoint", connectAddress}, 0.0)
 	return rr.changeEndpointStatus(connectAddress, false)
 }
 
@@ -135,4 +141,22 @@ func (rr *RoundRobinLoadBalancer) changeEndpointStatus(connectAddress string, st
 
 	return fmt.Errorf("Address not found in load balancing pool: %s", connectAddress)
 
+}
+
+//GetEndpoints returns the endpoints associated with the load balancer, partitioning
+//the set of endpoints into healthy and unhealthy endpoints
+func (rr *RoundRobinLoadBalancer) GetEndpoints() ([]string, []string) {
+	var healthy, unhealthy []string
+	rr.servers.Do(func(s interface{}) {
+		loadBalancingEndpoint, ok := s.(*LoadBalancerEndpoint)
+		if ok {
+			if loadBalancingEndpoint.Up {
+				healthy = append(healthy, loadBalancingEndpoint.Address)
+			} else {
+				unhealthy = append(healthy, loadBalancingEndpoint.Address)
+			}
+		}
+	})
+
+	return healthy, unhealthy
 }

@@ -21,7 +21,7 @@ func readListenerConfig(name string, kvs kvstore.KVStore) (lc *config.ListenerCo
 //BuildServiceForListener builds a runnable service based on the given name, retrieving
 //definitions using the supplied KVStore and listening on the supplied address.
 func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (Service, error) {
-	var managedService managedService
+	var managedService = newManagedService()
 
 	log.Info("Building service for listener " + name)
 	listenerConfig, err := readListenerConfig(name, kvs)
@@ -31,6 +31,7 @@ func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (
 	}
 
 	managedService.ListenerName = name
+	managedService.HealthCheckContext.ListenerName = name
 	managedService.Address = address
 	log.Info("reading routes...")
 	for _, routeName := range listenerConfig.RouteNames {
@@ -45,5 +46,5 @@ func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (
 		}
 	}
 
-	return &managedService, nil
+	return managedService, nil
 }

@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	//Needed to pickup the package imports for the profiler
+	"github.com/xtracdev/xavi/info"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
@@ -110,6 +111,8 @@ func Run(args []string, pluginRegistrationFn func()) {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+
+	info.BuildVersion = BuildVersion
 
 	log.Info(version)
 	fireUpPProf()

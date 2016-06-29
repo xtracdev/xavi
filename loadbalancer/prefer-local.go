@@ -200,3 +200,12 @@ func (pl *PreferLocalLoadBalancer) MarkEndpointUp(endpoint string) error {
 		return markEndpointUp("remote server", endpoint, pl.RemoteServers)
 	}
 }
+
+//GetEndpoints returns the endpoints associated with the load balancer, partitioning
+//the set of endpoints into healthy and unhealthy endpoints
+func (pl *PreferLocalLoadBalancer) GetEndpoints() ([]string, []string) {
+	lh, luh := pl.LocalServers.GetEndpoints()
+	rh, ruh := pl.RemoteServers.GetEndpoints()
+
+	return append(lh, rh...), append(luh, ruh...)
+}

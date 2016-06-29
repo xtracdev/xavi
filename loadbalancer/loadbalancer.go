@@ -3,6 +3,7 @@ package loadbalancer
 import (
 	"sync"
 
+	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/config"
 )
 
@@ -28,6 +29,11 @@ func (lb *LoadBalancerEndpoint) MarkLoadBalancerEndpointUp(isUp bool) {
 	lb.mu.Lock()
 	defer lb.mu.Unlock()
 	lb.Up = isUp
+	if isUp {
+		metrics.SetGauge([]string{"endpoint", lb.Address}, 1.0)
+	} else {
+		metrics.SetGauge([]string{"endpoint", lb.Address}, 0.0)
+	}
 }
 
 //LoadBalancer has methods for handing out connection addressed and marking
@@ -36,6 +42,7 @@ type LoadBalancer interface {
 	GetConnectAddress() (string, error)
 	MarkEndpointDown(string) error
 	MarkEndpointUp(string) error
+	GetEndpoints() (healthy []string, unhealthy []string)
 }
 
 //LoadBalancerFactory defines an interface for instantiating load balancers.
