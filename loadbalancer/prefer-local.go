@@ -208,8 +208,6 @@ func (pl *PreferLocalLoadBalancer) GetEndpoints() ([]string, []string) {
 
 	if pl.LocalServers != nil {
 		lh, luh := pl.LocalServers.GetEndpoints()
-		fmt.Printf("%v\n", lh)
-		fmt.Printf("%v\n", luh)
 		healthy = append(healthy, lh...)
 		unhealthy = append(unhealthy, luh...)
 	}
