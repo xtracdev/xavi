@@ -153,8 +153,10 @@ func (rr *RoundRobinLoadBalancer) GetEndpoints() ([]string, []string) {
 			if loadBalancingEndpoint.Up {
 				healthy = append(healthy, loadBalancingEndpoint.Address)
 			} else {
-				unhealthy = append(healthy, loadBalancingEndpoint.Address)
+				unhealthy = append(unhealthy, loadBalancingEndpoint.Address)
 			}
+		} else {
+			log.Error("Something unexpected found in endpoint map")
 		}
 	})
 

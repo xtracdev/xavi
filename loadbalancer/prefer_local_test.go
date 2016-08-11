@@ -289,3 +289,23 @@ func TestPrefLocalWithLocalhost(t *testing.T) {
 	}
 
 }
+
+func TestGetEndpointsNoRemoteServers(t *testing.T) {
+	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
+	pllb, err := preferLocalFactory.NewLoadBalancer("foo", "", makeTestLocalServer())
+	assert.Nil(t, err)
+	assert.NotNil(t, pllb)
+	h, uh := pllb.GetEndpoints()
+	assert.Equal(t, len(h), 1)
+	assert.Equal(t, len(uh), 0)
+}
+
+func TestGetEndpointsNoLocalServers(t *testing.T) {
+	var preferLocalFactory LoadBalancerFactory = new(PreferLocalLoadBalancerFactory)
+	pllb, err := preferLocalFactory.NewLoadBalancer("foo", "", makeTestRemoteServer())
+	assert.Nil(t, err)
+	assert.NotNil(t, pllb)
+	h, uh := pllb.GetEndpoints()
+	assert.Equal(t, len(h), 1)
+	assert.Equal(t, len(uh), 0)
+}

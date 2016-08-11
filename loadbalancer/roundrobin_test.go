@@ -104,7 +104,14 @@ func TestMarkEndpointDown(t *testing.T) {
 		PingURI: "/xtracrulesok",
 	}
 
-	servers := []config.ServerConfig{serverConfig}
+	serverConfig2 := config.ServerConfig{
+		Name:    "server2",
+		Address: "server2.domain.com",
+		Port:    11000,
+		PingURI: "/xtracrulesok",
+	}
+
+	servers := []config.ServerConfig{serverConfig, serverConfig2}
 
 	var roundRobinFactory LoadBalancerFactory = new(RoundRobinLoadBalancerFactory)
 	rr, err := roundRobinFactory.NewLoadBalancer("backend", "", servers)
@@ -123,9 +130,12 @@ func TestMarkEndpointDown(t *testing.T) {
 	err = rr.MarkEndpointDown("server1.domain.com:11000")
 	assert.Nil(t, err)
 
+	err = rr.MarkEndpointDown("server2.domain.com:11000")
+	assert.Nil(t, err)
+
 	h, u := rr.GetEndpoints()
 	assert.Equal(t, 0, len(h))
-	assert.Equal(t, 1, len(u))
+	assert.Equal(t, 2, len(u))
 
 	_, err = rr.GetConnectAddress()
 	assert.NotNil(t, err)
@@ -136,4 +146,14 @@ func TestMarkEndpointDown(t *testing.T) {
 	_, err = rr.GetConnectAddress()
 	assert.Nil(t, err)
 
+	h, u = rr.GetEndpoints()
+	assert.Equal(t, 1, len(h))
+	assert.Equal(t, 1, len(u))
+
+	err = rr.MarkEndpointUp("server2.domain.com:11000")
+	assert.Nil(t, err)
+
+	h, u = rr.GetEndpoints()
+	assert.Equal(t, 2, len(h))
+	assert.Equal(t, 0, len(u))
 }

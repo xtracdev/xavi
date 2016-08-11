@@ -204,8 +204,19 @@ func (pl *PreferLocalLoadBalancer) MarkEndpointUp(endpoint string) error {
 //GetEndpoints returns the endpoints associated with the load balancer, partitioning
 //the set of endpoints into healthy and unhealthy endpoints
 func (pl *PreferLocalLoadBalancer) GetEndpoints() ([]string, []string) {
-	lh, luh := pl.LocalServers.GetEndpoints()
-	rh, ruh := pl.RemoteServers.GetEndpoints()
+	var healthy, unhealthy []string
 
-	return append(lh, rh...), append(luh, ruh...)
+	if pl.LocalServers != nil {
+		lh, luh := pl.LocalServers.GetEndpoints()
+		healthy = append(healthy, lh...)
+		unhealthy = append(unhealthy, luh...)
+	}
+
+	if pl.RemoteServers != nil {
+		rh, ruh := pl.RemoteServers.GetEndpoints()
+		healthy = append(healthy, rh...)
+		unhealthy = append(unhealthy, ruh...)
+	}
+
+	return healthy, unhealthy
 }
