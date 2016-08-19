@@ -27,6 +27,8 @@ func IsKnownHealthCheck(healthcheck string) bool {
 		return true
 	case "https-get":
 		return true
+	case "custom":
+		return true
 	default:
 		return false
 	}
@@ -34,7 +36,7 @@ func IsKnownHealthCheck(healthcheck string) bool {
 
 //KnownHealthChecks returns the names of the health checks supported bt the toolkit
 func KnownHealthChecks() string {
-	return "none, http-get,https-get"
+	return "none, http-get, https-get, custom"
 }
 
 func healthy(endpoint string, transport *http.Transport) <-chan bool {

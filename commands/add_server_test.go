@@ -134,3 +134,26 @@ func TestAddServerSynopsis(t *testing.T) {
 	assert.NotEqual(t, "", synopsis)
 	assert.True(t, strings.ToUpper(synopsis)[0] == synopsis[0], "Synopsis must start with an uppercase char")
 }
+
+func TestAddServerCustomHealthcheck(t *testing.T) {
+
+	_, addServer := testMakeAddServer(false)
+
+	args := []string{"-address", "an-address", "-port", "42", "-name", "test-name", "-ping-uri", "/dev/null",
+		"-health-check", "custom", "-health-check-interval", "42", "-health-check-timeout", "10"}
+	status := addServer.Run(args)
+	assert.Equal(t, 0, status)
+	storedBytes, err := addServer.KVStore.Get("servers/test-name")
+	assert.Nil(t, err)
+	if assert.NotNil(t, storedBytes) {
+
+		s := config.JSONToServer(storedBytes)
+		assert.Equal(t, "test-name", s.Name)
+		assert.Equal(t, "an-address", s.Address)
+		assert.Equal(t, 42, s.Port)
+		assert.Equal(t, "/dev/null", s.PingURI)
+		assert.Equal(t, "custom", s.HealthCheck)
+		assert.Equal(t, 42, s.HealthCheckInterval)
+		assert.Equal(t, 10, s.HealthCheckTimeout)
+	}
+}
