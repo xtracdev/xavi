@@ -140,7 +140,7 @@ func TestAddServerCustomHealthcheck(t *testing.T) {
 	_, addServer := testMakeAddServer(false)
 
 	args := []string{"-address", "an-address", "-port", "42", "-name", "test-name", "-ping-uri", "/dev/null",
-		"-health-check", "custom", "-health-check-interval", "42", "-health-check-timeout", "10"}
+		"-health-check", "custom-http", "-health-check-interval", "42", "-health-check-timeout", "10"}
 	status := addServer.Run(args)
 	assert.Equal(t, 0, status)
 	storedBytes, err := addServer.KVStore.Get("servers/test-name")
@@ -152,7 +152,7 @@ func TestAddServerCustomHealthcheck(t *testing.T) {
 		assert.Equal(t, "an-address", s.Address)
 		assert.Equal(t, 42, s.Port)
 		assert.Equal(t, "/dev/null", s.PingURI)
-		assert.Equal(t, "custom", s.HealthCheck)
+		assert.Equal(t, "custom-http", s.HealthCheck)
 		assert.Equal(t, 42, s.HealthCheckInterval)
 		assert.Equal(t, 10, s.HealthCheckTimeout)
 	}

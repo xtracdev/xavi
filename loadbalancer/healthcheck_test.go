@@ -92,7 +92,7 @@ func TestHCCustomHealthy(t *testing.T) {
 		Address:             "localhost",
 		Port:                port,
 		PingURI:             "/foo",
-		HealthCheck:         "custom",
+		HealthCheck:         "custom-http",
 		HealthCheckInterval: 200,
 		HealthCheckTimeout:  100,
 	}

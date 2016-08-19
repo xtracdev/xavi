@@ -27,7 +27,9 @@ func IsKnownHealthCheck(healthcheck string) bool {
 		return true
 	case "https-get":
 		return true
-	case "custom":
+	case "custom-http":
+		return true
+	case "customer-https":
 		return true
 	default:
 		return false
@@ -36,7 +38,7 @@ func IsKnownHealthCheck(healthcheck string) bool {
 
 //KnownHealthChecks returns the names of the health checks supported bt the toolkit
 func KnownHealthChecks() string {
-	return "none, http-get, https-get, custom"
+	return "none, http-get, https-get, custom-http, custom-https"
 }
 
 func healthy(endpoint string, transport *http.Transport) <-chan bool {
@@ -173,7 +175,7 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 	case "https-get":
 		log.Debug("returning http-get health check")
 		return httpGet(lbEndpoint, serverConfig, loop, true, healthy)
-	case "custom":
+	case "custom-http":
 		log.Info("return custom health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
 		if hcfn == nil {
@@ -182,5 +184,14 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 		}
 		log.Infof("Returning httpGet for %s", serverConfig.Name)
 		return httpGet(lbEndpoint, serverConfig, loop, false, hcfn)
+	case "custom-https":
+		log.Info("return custom health check")
+		hcfn := config.HealthCheckForServer(serverConfig.Name)
+		if hcfn == nil {
+			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
+				serverConfig.Name)
+		}
+		log.Infof("Returning httpGet for %s indicating https transport", serverConfig.Name)
+		return httpGet(lbEndpoint, serverConfig, loop, true, hcfn)
 	}
 }
