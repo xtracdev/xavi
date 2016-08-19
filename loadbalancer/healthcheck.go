@@ -29,7 +29,7 @@ func IsKnownHealthCheck(healthcheck string) bool {
 		return true
 	case "custom-http":
 		return true
-	case "customer-https":
+	case "custom-https":
 		return true
 	default:
 		return false
