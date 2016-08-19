@@ -27,6 +27,10 @@ func IsKnownHealthCheck(healthcheck string) bool {
 		return true
 	case "https-get":
 		return true
+	case "custom-http":
+		return true
+	case "custom-https":
+		return true
 	default:
 		return false
 	}
@@ -34,7 +38,7 @@ func IsKnownHealthCheck(healthcheck string) bool {
 
 //KnownHealthChecks returns the names of the health checks supported bt the toolkit
 func KnownHealthChecks() string {
-	return "none, http-get,https-get"
+	return "none, http-get, https-get, custom-http, custom-https"
 }
 
 func healthy(endpoint string, transport *http.Transport) <-chan bool {
@@ -59,12 +63,6 @@ func healthy(endpoint string, transport *http.Transport) <-chan bool {
 		//connections in grow without being released.
 		defer resp.Body.Close()
 		ioutil.ReadAll(resp.Body)
-
-		if resp == nil {
-			log.Warn("nil response from health check endpoint")
-			statusChannel <- false
-			return
-		}
 
 		statusChannel <- resp.StatusCode == 200
 	}()
@@ -115,7 +113,7 @@ func makeTransportForHealthCheck(https bool, caCertPath string) *http.Transport 
 
 }
 
-func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool, https bool) func() {
+func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool, https bool, hcfn config.HealthCheckFn) func() {
 
 	var url string
 	transport := makeTransportForHealthCheck(https, lbEndpoint.CACertPath)
@@ -133,7 +131,7 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 			time.Sleep(healthCheckInterval)
 			log.Debug("checking health")
 			select {
-			case healthStatus := <-healthy(url, transport):
+			case healthStatus := <-hcfn(url, transport):
 				if !healthStatus {
 					log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
 					lbEndpoint.MarkLoadBalancerEndpointUp(false)
@@ -160,15 +158,34 @@ func noop() {}
 //loop arguement is meant to enable testability - normal health check functions run until the listener is shutdown,
 //unit test health checks run once typically.
 func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
+	log.Infof("Making health check for %s", serverConfig.Name)
 	switch serverConfig.HealthCheck {
 	default:
 		log.Debug("returning no-op health check")
 		return noop
 	case "http-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, false)
+		return httpGet(lbEndpoint, serverConfig, loop, false, healthy)
 	case "https-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, true)
+		return httpGet(lbEndpoint, serverConfig, loop, true, healthy)
+	case "custom-http":
+		log.Info("return custom health check")
+		hcfn := config.HealthCheckForServer(serverConfig.Name)
+		if hcfn == nil {
+			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
+				serverConfig.Name)
+		}
+		log.Infof("Returning httpGet for %s", serverConfig.Name)
+		return httpGet(lbEndpoint, serverConfig, loop, false, hcfn)
+	case "custom-https":
+		log.Info("return custom health check")
+		hcfn := config.HealthCheckForServer(serverConfig.Name)
+		if hcfn == nil {
+			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
+				serverConfig.Name)
+		}
+		log.Infof("Returning httpGet for %s indicating https transport", serverConfig.Name)
+		return httpGet(lbEndpoint, serverConfig, loop, true, hcfn)
 	}
 }

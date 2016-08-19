@@ -20,6 +20,7 @@ import (
 //go build -ldflags "-X github.com/xtracdev/xavi/runner.BuildVersion=20160129.1"
 var BuildVersion string
 
+
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	setLoggingLevel()
@@ -104,6 +105,19 @@ func dumpVersionAndExit(args []string) (string, bool) {
 	return output, len(args) == 2 && args[1] == "-version"
 }
 
+//KVSCallbackFn defines a function type that can be registered with
+//the runner package. On startup, Run will call all registered functions with
+//the key value store used for the config
+type KVSCallbackFn func(kvs kvstore.KVStore) error
+
+var initKVSFuncs []KVSCallbackFn
+
+func AddKVSCallbackFunction(f KVSCallbackFn) {
+	if f != nil {
+		initKVSFuncs = append(initKVSFuncs, f)
+	}
+}
+
 //Run starts a process delegating to the shell.DoMain function
 func Run(args []string, pluginRegistrationFn func()) {
 	version, exit := dumpVersionAndExit(os.Args)
@@ -117,5 +131,14 @@ func Run(args []string, pluginRegistrationFn func()) {
 	log.Info(version)
 	fireUpPProf()
 	kvs := setupXAVIEnvironment(pluginRegistrationFn)
+
+	for _, f := range initKVSFuncs {
+		err := f(kvs)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+	}
+
 	os.Exit(shell.DoMain(args, kvs, os.Stdout))
 }
