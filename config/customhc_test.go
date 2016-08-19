@@ -42,3 +42,31 @@ func TestCustomHCLookup(t *testing.T) {
 		assert.NotNil(t, hcfn)
 	}
 }
+
+func TestCustomHCNoSuchBackend(t *testing.T) {
+	kvs := BuildKVStoreTestConfig(t)
+	err := RegisterHealthCheckForBackend(kvs, "Not a backend", simpleHC)
+	if assert.NotNil(t, err) {
+		assert.Equal(t, err, ErrNoSuchBackend)
+	}
+}
+
+func TestCustomHCNoFnForBackend(t *testing.T) {
+	kvs := BuildKVStoreTestConfig(t)
+	err := RegisterHealthCheckForBackend(kvs, "Not a backend", nil)
+	if assert.NotNil(t, err) {
+		assert.Equal(t, err, ErrNoHealthCheckFn)
+	}
+}
+
+func TestCustomHCBackendConfig(t *testing.T) {
+	kvs := BuildKVStoreTestConfig(t)
+	var hc1 HealthCheckFn = simpleHC
+	err := RegisterHealthCheckForBackend(kvs, "hello-backend", hc1)
+	if assert.Nil(t, err) {
+		hcfn := HealthCheckForServer("server1")
+		assert.NotNil(t, hcfn)
+		hcfn = HealthCheckForServer("server2")
+		assert.NotNil(t, hcfn)
+	}
+}
