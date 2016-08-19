@@ -12,26 +12,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
+	"github.com/xtracdev/xavi/kvstore"
+	"io/ioutil"
 )
 
 var standardTransport = &http.Transport{DisableKeepAlives: false, DisableCompression: false}
 
-func TestIsKnownHealthCheck(t *testing.T) {
+func TestHCIsKnownHealthCheck(t *testing.T) {
 	assert.True(t, IsKnownHealthCheck("none"))
 	assert.True(t, IsKnownHealthCheck("http-get"))
 	assert.False(t, IsKnownHealthCheck("code-monkey"))
 }
 
-func TestKnownHealthChecks(t *testing.T) {
+func TestHCKnownHealthChecks(t *testing.T) {
 	healthChecks := KnownHealthChecks()
 	assert.NotEmpty(t, healthChecks)
 	assert.True(t, strings.Contains(healthChecks, "none"))
 	assert.True(t, strings.Contains(healthChecks, "http-get"))
 }
 
-func TestHealthy(t *testing.T) {
+func TestHCHealthy(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello, client")
 	}))
@@ -56,7 +59,95 @@ func TestHealthy(t *testing.T) {
 
 }
 
-func TestHealthyTimeout(t *testing.T) {
+func TestHCCustomHealthy(t *testing.T) {
+	var called bool
+	var customerHeaderPresent bool
+
+	//Test server ping handler
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+		called = true
+		headerVal := r.Header.Get("CustomerHeader")
+		if headerVal == "XXX" {
+			customerHeaderPresent = true
+		}
+	}))
+
+	lbEndpoint := new(LoadBalancerEndpoint)
+	lbEndpoint.Address = ts.URL
+	lbEndpoint.PingURI = "/foo"
+	lbEndpoint.Up = false
+
+	testURL, err := url.Parse(ts.URL)
+	assert.Nil(t, err)
+	_, portStr, err := net.SplitHostPort(testURL.Host)
+	assert.Nil(t, err)
+
+	port, err := strconv.Atoi(portStr)
+
+	kvs, _ := kvstore.NewHashKVStore("")
+
+	serverConfig := config.ServerConfig{
+		Name:                "server1",
+		Address:             "localhost",
+		Port:                port,
+		PingURI:             "/foo",
+		HealthCheck:         "custom",
+		HealthCheckInterval: 200,
+		HealthCheckTimeout:  100,
+	}
+
+	err = serverConfig.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//Register custom health check
+	hcfn := func(endpoint string, transport *http.Transport) <-chan bool {
+		statusChannel := make(chan bool)
+
+		client := &http.Client{
+			Transport: transport,
+		}
+
+		go func() {
+			logrus.Infof("Custom health check alive, endpoint %s", endpoint)
+
+			req, _ := http.NewRequest("GET", endpoint, nil)
+			req.Header.Add("CustomerHeader", "XXX")
+			resp, err := client.Do(req)
+			if err != nil {
+				logrus.Warnf("Error getting endpoint: %s", err.Error())
+				statusChannel <- false
+				return
+			}
+
+			defer resp.Body.Close()
+			ioutil.ReadAll(resp.Body)
+
+			if resp == nil {
+				statusChannel <- false
+				return
+			}
+
+			statusChannel <- resp.StatusCode == 200
+		}()
+
+		return statusChannel
+	}
+
+	config.RegisterHealthCheckForServer(kvs, "server1", hcfn)
+
+	//Create the healthcheck function and invoke it
+	healthcheckFn := MakeHealthCheck(lbEndpoint, serverConfig, false)
+	healthcheckFn()
+
+	assert.True(t, called)
+	assert.True(t, lbEndpoint.Up)
+
+}
+
+func TestHCHealthyTimeout(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(200 * time.Millisecond)
 		fmt.Fprintln(w, "Hello, client")
@@ -75,7 +166,7 @@ func TestHealthyTimeout(t *testing.T) {
 	}
 }
 
-func TestMakeHealthCheck(t *testing.T) {
+func TestHCMakeHealthCheck(t *testing.T) {
 	var called = false
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -114,66 +205,7 @@ func TestMakeHealthCheck(t *testing.T) {
 
 }
 
-/*
-
-Doesn't always pass...
-func TestMakeHealthCheckConcurrently(t *testing.T) {
-	var called = false
-	var mu sync.Mutex
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		called = true
-		mu.Unlock()
-		fmt.Fprintln(w, "Hello, client")
-	}))
-	defer ts.Close()
-
-	//Saw test failures appear randomly - speculated adding a delay would allow this to
-	//work. No race condition detected.
-	time.Sleep(500 * time.Millisecond)
-
-	lbEndpoint := new(LoadBalancerEndpoint)
-	lbEndpoint.Address = ts.URL
-	lbEndpoint.PingURI = "/foo"
-	lbEndpoint.Up = false
-
-	testURL, err := url.Parse(ts.URL)
-	assert.Nil(t, err)
-	_, portStr, err := net.SplitHostPort(testURL.Host)
-	assert.Nil(t, err)
-
-	port, err := strconv.Atoi(portStr)
-
-	serverConfig := config.ServerConfig{
-		Name:                "testcfg",
-		Address:             "localhost",
-		Port:                port,
-		PingURI:             "/foo",
-		HealthCheck:         "http-get",
-		HealthCheckInterval: 200,
-		HealthCheckTimeout:  100,
-	}
-
-	healthcheckFn := MakeHealthCheck(lbEndpoint, serverConfig, false)
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go healthcheckFn()
-		time.AfterFunc(1e9, func() {
-			wg.Done()
-		})
-	}
-	wg.Wait()
-	mu.Lock()
-	assert.True(t, called)
-	mu.Unlock()
-
-	assert.True(t, lbEndpoint.IsUp())
-}
-*/
-
-func TestMakeHealthCheckUnhealthy(t *testing.T) {
+func TestHCMakeHealthCheckUnhealthy(t *testing.T) {
 	var called = false
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -212,7 +244,7 @@ func TestMakeHealthCheckUnhealthy(t *testing.T) {
 
 }
 
-func TestMakeHealthCheckTimeout(t *testing.T) {
+func TestHCMakeHealthCheckTimeout(t *testing.T) {
 	var called = false
 	var wg sync.WaitGroup
 

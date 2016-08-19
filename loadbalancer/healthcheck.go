@@ -117,7 +117,7 @@ func makeTransportForHealthCheck(https bool, caCertPath string) *http.Transport 
 
 }
 
-func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool, https bool) func() {
+func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool, https bool, hcfn config.HealthCheckFn) func() {
 
 	var url string
 	transport := makeTransportForHealthCheck(https, lbEndpoint.CACertPath)
@@ -135,7 +135,7 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 			time.Sleep(healthCheckInterval)
 			log.Debug("checking health")
 			select {
-			case healthStatus := <-healthy(url, transport):
+			case healthStatus := <-hcfn(url, transport):
 				if !healthStatus {
 					log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
 					lbEndpoint.MarkLoadBalancerEndpointUp(false)
@@ -162,15 +162,25 @@ func noop() {}
 //loop arguement is meant to enable testability - normal health check functions run until the listener is shutdown,
 //unit test health checks run once typically.
 func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
+	log.Infof("Making health check for %s", serverConfig.Name)
 	switch serverConfig.HealthCheck {
 	default:
 		log.Debug("returning no-op health check")
 		return noop
 	case "http-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, false)
+		return httpGet(lbEndpoint, serverConfig, loop, false, healthy)
 	case "https-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, true)
+		return httpGet(lbEndpoint, serverConfig, loop, true, healthy)
+	case "custom":
+		log.Info("return custom health check")
+		hcfn := config.HealthCheckForServer(serverConfig.Name)
+		if hcfn == nil {
+			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
+				serverConfig.Name)
+		}
+		log.Infof("Returning httpGet for %s", serverConfig.Name)
+		return httpGet(lbEndpoint, serverConfig, loop, false, hcfn)
 	}
 }
