@@ -41,33 +41,36 @@ func KnownHealthChecks() string {
 	return "none, http-get, https-get, custom-http, custom-https"
 }
 
-func healthy(endpoint string, transport *http.Transport) <-chan bool {
-	statusChannel := make(chan bool)
+func createHealthyWithTimeout(healthCheckTimeout time.Duration) config.HealthCheckFn {
+	return func(endpoint string, transport *http.Transport) <-chan bool {
+		statusChannel := make(chan bool)
 
-	client := &http.Client{
-		Transport: transport,
-	}
-
-	go func() {
-
-		resp, err := client.Get(endpoint)
-		if err != nil {
-			log.Warn("Error doing get on healthcheck endpoint ", endpoint, " : ", err.Error())
-			statusChannel <- false
-			return
+		client := &http.Client{
+			Transport: transport,
+			Timeout:   healthCheckTimeout,
 		}
 
-		//Read the entire response and close the body to ensure proper connection hygiene. On the mac you
-		//can use something like lsof | grep xavi|wc -l  (and check/timeout values
-		//of 5000/2000 ms respectively) to see file handles in use - without the close and read the
-		//connections in grow without being released.
-		defer resp.Body.Close()
-		ioutil.ReadAll(resp.Body)
+		go func() {
 
-		statusChannel <- resp.StatusCode == 200
-	}()
+			resp, err := client.Get(endpoint)
+			if err != nil {
+				log.Warn("Error doing get on healthcheck endpoint ", endpoint, " : ", err.Error())
+				statusChannel <- false
+				return
+			}
 
-	return statusChannel
+			//Read the entire response and close the body to ensure proper connection hygiene. On the mac you
+			//can use something like lsof | grep xavi|wc -l  (and check/timeout values
+			//of 5000/2000 ms respectively) to see file handles in use - without the close and read the
+			//connections in grow without being released.
+			defer resp.Body.Close()
+			_,err = ioutil.ReadAll(resp.Body)
+
+			statusChannel <- resp.StatusCode == 200
+		}()
+
+		return statusChannel
+	}
 }
 
 func makeCertPool(caCertPath string) *x509.CertPool {
@@ -165,10 +168,20 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 		return noop
 	case "http-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, false, healthy)
+		healthCheckTimeout := time.Duration(DefaultHealthCheckTimeout)
+		if serverConfig.HealthCheckTimeout > 0 {
+			healthCheckTimeout = time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond
+		}
+		return httpGet(lbEndpoint, serverConfig, loop, false,
+			createHealthyWithTimeout(healthCheckTimeout))
 	case "https-get":
-		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, true, healthy)
+		log.Debug("returning https-get health check")
+		healthCheckTimeout := time.Duration(DefaultHealthCheckTimeout)
+		if serverConfig.HealthCheckTimeout > 0 {
+			healthCheckTimeout = time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond
+		}
+		return httpGet(lbEndpoint, serverConfig, loop, true,
+			createHealthyWithTimeout(healthCheckTimeout))
 	case "custom-http":
 		log.Info("return custom health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
