@@ -41,7 +41,7 @@ func KnownHealthChecks() string {
 	return "none, http-get, https-get, custom-http, custom-https"
 }
 
-func createHealthyWithTimeout(healthCheckTimeout time.Duration) config.HealthCheckFn {
+func createHealtgCheckFnWithTimeout(healthCheckTimeout time.Duration) config.HealthCheckFn {
 	return func(endpoint string, transport *http.Transport) <-chan bool {
 		statusChannel := make(chan bool)
 
@@ -173,7 +173,7 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 			healthCheckTimeout = time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond
 		}
 		return httpGet(lbEndpoint, serverConfig, loop, false,
-			createHealthyWithTimeout(healthCheckTimeout))
+			createHealtgCheckFnWithTimeout(healthCheckTimeout))
 	case "https-get":
 		log.Debug("returning https-get health check")
 		healthCheckTimeout := time.Duration(DefaultHealthCheckTimeout)
@@ -181,7 +181,7 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 			healthCheckTimeout = time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond
 		}
 		return httpGet(lbEndpoint, serverConfig, loop, true,
-			createHealthyWithTimeout(healthCheckTimeout))
+			createHealtgCheckFnWithTimeout(healthCheckTimeout))
 	case "custom-http":
 		log.Info("return custom health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)

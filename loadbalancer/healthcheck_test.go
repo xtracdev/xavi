@@ -21,7 +21,7 @@ import (
 
 var standardTransport = &http.Transport{DisableKeepAlives: false, DisableCompression: false}
 
-var healthy = createHealthyWithTimeout(500 * time.Millisecond)
+var healthy = createHealtgCheckFnWithTimeout(500 * time.Millisecond)
 
 func TestHCIsKnownHealthCheck(t *testing.T) {
 	assert.True(t, IsKnownHealthCheck("none"))
