@@ -78,6 +78,11 @@ func createHealthCheckFnWithTimeout(healthCheckTimeout time.Duration) config.Hea
 			//connections in grow without being released.
 			defer resp.Body.Close()
 			_,err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Warnf("Error reading health check response: %v", err)
+				statusChannel <- false
+				return
+			}
 
 			statusChannel <- resp.StatusCode == 200
 		}()
