@@ -15,7 +15,7 @@ func TestLBUtilsBuildFromConfig(t *testing.T) {
 
 	config.RecordActiveConfig(sc)
 
-	lb, backend, err := NewLoadBalancer("route1", "hello-backend")
+	lb, backend, err := NewLoadBalancer("hello-backend")
 	assert.Nil(t, err)
 	assert.NotNil(t, lb)
 	assert.NotNil(t, backend)
@@ -40,7 +40,7 @@ func TestLBUtilsNoSuchBackend(t *testing.T) {
 
 	config.RecordActiveConfig(sc)
 
-	lb, backend, err := NewLoadBalancer("route1", "no-such-backed")
+	lb, backend, err := NewLoadBalancer("no-such-backed")
 	assert.Nil(t, lb)
 	assert.Nil(t, backend)
 	assert.NotNil(t, err)

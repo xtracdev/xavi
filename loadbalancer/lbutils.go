@@ -43,7 +43,7 @@ func serversForBackend(backend *config.ServiceBackend) []config.ServerConfig {
 // NewLoadBalancer instantiates a load balancer based on the named backend configuration. Backend
 // names are scoped to routes, thus the route is given to ensure the correct backend is returned
 // if multiple backend definitions with the same name are given.
-func NewLoadBalancer(routeName, backendName string) (LoadBalancer, *config.BackendConfig, error) {
+func NewLoadBalancer(backendName string) (LoadBalancer, *config.BackendConfig, error) {
 	backend, err := findBackend(backendName)
 	if err != nil {
 		return nil, nil, err
