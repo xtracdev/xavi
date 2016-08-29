@@ -55,6 +55,19 @@ func createHealthCheckFnWithTimeout(healthCheckTimeout time.Duration) config.Hea
 			resp, err := client.Get(endpoint)
 			if err != nil {
 				log.Warn("Error doing get on healthcheck endpoint ", endpoint, " : ", err.Error())
+
+				//Check to see if there's a non-nil response: drain it if present
+				if resp != nil {
+					log.Info("clean up non-nil response delivered with health check client error")
+					defer resp.Body.Close()
+					b, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						log.Infof("Error reading resp while cleaning up after error: %v\n", err)
+					} else {
+						log.Infof("Discarded response body after handling error on healtcheck get: %s\n", b)
+					}
+				}
+
 				statusChannel <- false
 				return
 			}
