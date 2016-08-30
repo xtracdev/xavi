@@ -1,21 +1,21 @@
 package loadbalancer
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
-	"net/http"
-	"crypto/tls"
-	"crypto/x509"
-	"io/ioutil"
-	"golang.org/x/net/context/ctxhttp"
 	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
+	"io/ioutil"
+	"net/http"
 )
 
 type BackendLoadBalancer struct {
-	LoadBalancer LoadBalancer
+	LoadBalancer  LoadBalancer
 	BackendConfig *config.BackendConfig
-	CertPool       *x509.CertPool
+	CertPool      *x509.CertPool
 }
 
 var ErrBackendNotFound = errors.New("Given backed end not found in active listener config")
@@ -93,23 +93,19 @@ func NewBackendLoadBalancer(backendName string) (*BackendLoadBalancer, error) {
 
 	certPool, err := createCertPool(backendConfig)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	lb, err := factory.NewLoadBalancer(backendConfig.Name, backendConfig.CACertPath, servers)
 
-	return &BackendLoadBalancer{LoadBalancer:lb,BackendConfig:backendConfig, CertPool: certPool}, err
+	return &BackendLoadBalancer{LoadBalancer: lb, BackendConfig: backendConfig, CertPool: certPool}, err
 }
 
-
-
-
-func (lb *BackendLoadBalancer) DoWithLoadbalancer(ctx context.Context, req *http.Request, useTLS bool)(*http.Response,error) {
-	connectString,err := lb.LoadBalancer.GetConnectAddress()
+func (lb *BackendLoadBalancer) DoWithLoadBalancer(ctx context.Context, req *http.Request, useTLS bool) (*http.Response, error) {
+	connectString, err := lb.LoadBalancer.GetConnectAddress()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-
 
 	log.Debug("connect string is ", connectString)
 	req.URL.Host = connectString
@@ -117,10 +113,12 @@ func (lb *BackendLoadBalancer) DoWithLoadbalancer(ctx context.Context, req *http
 
 	var transport *http.Transport
 	if useTLS == true {
+		log.Debug("Configuring TLS transport")
 		tlsConfig := &tls.Config{RootCAs: lb.CertPool}
 		transport = &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig}
 		req.URL.Scheme = "https"
 	} else {
+		log.Debug("Configuring non-TLS transport")
 		transport = &http.Transport{DisableKeepAlives: false, DisableCompression: false}
 		req.URL.Scheme = "http"
 	}

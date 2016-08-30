@@ -3,15 +3,15 @@ package loadbalancer
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
-	"testing"
-	"net/http/httptest"
-	"net/http"
-	"net/url"
 	"github.com/xtracdev/xavi/kvstore"
-	"net"
-	"io/ioutil"
-	"strconv"
 	"golang.org/x/net/context"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"testing"
 )
 
 func TestLBUtilsBuildFromConfig(t *testing.T) {
@@ -53,7 +53,7 @@ func TestLBUtilsNoSuchBackend(t *testing.T) {
 	assert.Equal(t, ErrBackendNotFound, err)
 }
 
-func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string)kvstore.KVStore {
+func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string) kvstore.KVStore {
 	kvs, _ := kvstore.NewHashKVStore("")
 
 	//Define listener
@@ -64,12 +64,12 @@ func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string)kvstor
 	}
 
 	//Define server 1
-	url,_ := url.Parse(server1Url)
-	host,port,err := net.SplitHostPort(url.Host)
-	assert.Nil(t,err)
+	url, _ := url.Parse(server1Url)
+	host, port, err := net.SplitHostPort(url.Host)
+	assert.Nil(t, err)
 
-	portVal,err := strconv.Atoi(port)
-	assert.Nil(t,err)
+	portVal, err := strconv.Atoi(port)
+	assert.Nil(t, err)
 
 	serverConfig1 := &config.ServerConfig{"lbcserver1", host, portVal, "/hello", "none", 0, 0}
 	err = serverConfig1.Store(kvs)
@@ -78,19 +78,18 @@ func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string)kvstor
 	}
 
 	//Define server 2
-	url,_ = url.Parse(server2Url)
-	host,port,err = net.SplitHostPort(url.Host)
-	assert.Nil(t,err)
+	url, _ = url.Parse(server2Url)
+	host, port, err = net.SplitHostPort(url.Host)
+	assert.Nil(t, err)
 
-	portVal,err = strconv.Atoi(port)
-	assert.Nil(t,err)
+	portVal, err = strconv.Atoi(port)
+	assert.Nil(t, err)
 
 	serverConfig2 := &config.ServerConfig{"lbcserver2", host, portVal, "/hello", "none", 0, 0}
 	err = serverConfig2.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 
 	//Define route
 	r := &config.RouteConfig{
@@ -107,7 +106,7 @@ func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string)kvstor
 
 	b := &config.BackendConfig{
 		Name:        "lbcbackend",
-		ServerNames: []string{"lbcserver1","lbcserver2"},
+		ServerNames: []string{"lbcserver1", "lbcserver2"},
 	}
 	err = b.Store(kvs)
 	if err != nil {
@@ -144,25 +143,25 @@ func TestLBUtilsCallSvc(t *testing.T) {
 	lb, err := NewBackendLoadBalancer("lbcbackend")
 	assert.Nil(t, err)
 
-	req,err := http.NewRequest("GET","/foo",nil)
-	assert.Nil(t,err)
+	req, err := http.NewRequest("GET", "/foo", nil)
+	assert.Nil(t, err)
 
 	//Call 1
-	resp, err := lb.DoWithLoadbalancer(context.Background(), req, false)
+	resp, err := lb.DoWithLoadBalancer(context.Background(), req, false)
 	if assert.Nil(t, err) {
 		defer resp.Body.Close()
-		b,err := ioutil.ReadAll(resp.Body)
-		assert.Nil(t,err)
-		assert.Equal(t, serverResp,string(b))
+		b, err := ioutil.ReadAll(resp.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, serverResp, string(b))
 	}
 
 	//Call 2
-	resp, err = lb.DoWithLoadbalancer(context.Background(), req, false)
+	resp, err = lb.DoWithLoadBalancer(context.Background(), req, false)
 	if assert.Nil(t, err) {
 		defer resp.Body.Close()
-		b,err := ioutil.ReadAll(resp.Body)
-		assert.Nil(t,err)
-		assert.Equal(t, serverResp,string(b))
+		b, err := ioutil.ReadAll(resp.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, serverResp, string(b))
 	}
 
 	//Make sure both servers were called
