@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"github.com/xtracdev/xavi/kvstore"
 	"net"
-	"context"
 	"io/ioutil"
 	"strconv"
+	"golang.org/x/net/context"
 )
 
 func TestLBUtilsBuildFromConfig(t *testing.T) {
