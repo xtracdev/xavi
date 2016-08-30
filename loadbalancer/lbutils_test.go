@@ -53,21 +53,23 @@ func TestLBUtilsNoSuchBackend(t *testing.T) {
 	assert.Equal(t, ErrBackendNotFound, err)
 }
 
-func buildTestConfigForLBCall(t *testing.T, urlStr string)kvstore.KVStore {
+func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string)kvstore.KVStore {
 	kvs, _ := kvstore.NewHashKVStore("")
 
-	url,_ := url.Parse(urlStr)
+	//Define listener
+	ln := &config.ListenerConfig{"lbclistener", []string{"lbcroute1"}}
+	err := ln.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//Define server 1
+	url,_ := url.Parse(server1Url)
 	host,port,err := net.SplitHostPort(url.Host)
 	assert.Nil(t,err)
 
 	portVal,err := strconv.Atoi(port)
 	assert.Nil(t,err)
-
-	ln := &config.ListenerConfig{"lbclistener", []string{"lbcroute1"}}
-	err = ln.Store(kvs)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	serverConfig1 := &config.ServerConfig{"lbcserver1", host, portVal, "/hello", "none", 0, 0}
 	err = serverConfig1.Store(kvs)
@@ -75,6 +77,22 @@ func buildTestConfigForLBCall(t *testing.T, urlStr string)kvstore.KVStore {
 		t.Fatal(err)
 	}
 
+	//Define server 2
+	url,_ = url.Parse(server2Url)
+	host,port,err = net.SplitHostPort(url.Host)
+	assert.Nil(t,err)
+
+	portVal,err = strconv.Atoi(port)
+	assert.Nil(t,err)
+
+	serverConfig2 := &config.ServerConfig{"lbcserver2", host, portVal, "/hello", "none", 0, 0}
+	err = serverConfig2.Store(kvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+
+	//Define route
 	r := &config.RouteConfig{
 		Name:     "lbcroute1",
 		URIRoot:  "/hello",
@@ -89,7 +107,7 @@ func buildTestConfigForLBCall(t *testing.T, urlStr string)kvstore.KVStore {
 
 	b := &config.BackendConfig{
 		Name:        "lbcbackend",
-		ServerNames: []string{"lbcserver1"},
+		ServerNames: []string{"lbcserver1","lbcserver2"},
 	}
 	err = b.Store(kvs)
 	if err != nil {
@@ -101,14 +119,22 @@ func buildTestConfigForLBCall(t *testing.T, urlStr string)kvstore.KVStore {
 
 func TestLBUtilsCallSvc(t *testing.T) {
 
-
 	serverResp := "Hello, client"
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	var server1Called, server2Called bool
+
+	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server1Called = true
 		w.Write([]byte(serverResp))
 	}))
-	defer ts.Close()
+	defer server1.Close()
 
-	kvs := buildTestConfigForLBCall(t, ts.URL)
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server2Called = true
+		w.Write([]byte(serverResp))
+	}))
+	defer server2.Close()
+
+	kvs := buildTestConfigForLBCall(t, server1.URL, server2.URL)
 	sc, err := config.ReadServiceConfig("lbclistener", kvs)
 	assert.Nil(t, err)
 	assert.NotNil(t, sc)
@@ -120,6 +146,8 @@ func TestLBUtilsCallSvc(t *testing.T) {
 
 	req,err := http.NewRequest("GET","/foo",nil)
 	assert.Nil(t,err)
+
+	//Call 1
 	resp, err := lb.DoWithLoadbalancer(context.Background(), req, false)
 	if assert.Nil(t, err) {
 		defer resp.Body.Close()
@@ -127,4 +155,17 @@ func TestLBUtilsCallSvc(t *testing.T) {
 		assert.Nil(t,err)
 		assert.Equal(t, serverResp,string(b))
 	}
+
+	//Call 2
+	resp, err = lb.DoWithLoadbalancer(context.Background(), req, false)
+	if assert.Nil(t, err) {
+		defer resp.Body.Close()
+		b,err := ioutil.ReadAll(resp.Body)
+		assert.Nil(t,err)
+		assert.Equal(t, serverResp,string(b))
+	}
+
+	//Make sure both servers were called
+	assert.True(t, server1Called, "Expected server 1 to be called")
+	assert.True(t, server2Called, "Expected server 2 to be called")
 }
