@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestPostitiveDuration(t *testing.T) {
@@ -32,6 +33,7 @@ func TestContributors(t *testing.T) {
 	at := NewEndToEndTimer("foo")
 	c1 := at.StartContributor("c1")
 	c2 := at.StartContributor("c2")
+	time.Sleep(10 * time.Millisecond)
 	c2.End(nil)
 	c1.End(nil)
 	at.Stop(nil)
@@ -94,6 +96,8 @@ func TestMultiBackendRecordings(t *testing.T) {
 	}()
 
 	wg.Wait()
+
+	time.Sleep(10 * time.Millisecond)
 
 	c3.End(nil)
 

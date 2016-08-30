@@ -41,33 +41,54 @@ func KnownHealthChecks() string {
 	return "none, http-get, https-get, custom-http, custom-https"
 }
 
-func healthy(endpoint string, transport *http.Transport) <-chan bool {
-	statusChannel := make(chan bool)
+func createHealthCheckFnWithTimeout(healthCheckTimeout time.Duration) config.HealthCheckFn {
+	return func(endpoint string, transport *http.Transport) <-chan bool {
+		statusChannel := make(chan bool)
 
-	client := &http.Client{
-		Transport: transport,
-	}
-
-	go func() {
-
-		resp, err := client.Get(endpoint)
-		if err != nil {
-			log.Warn("Error doing get on healthcheck endpoint ", endpoint, " : ", err.Error())
-			statusChannel <- false
-			return
+		client := &http.Client{
+			Transport: transport,
+			Timeout:   healthCheckTimeout,
 		}
 
-		//Read the entire response and close the body to ensure proper connection hygiene. On the mac you
-		//can use something like lsof | grep xavi|wc -l  (and check/timeout values
-		//of 5000/2000 ms respectively) to see file handles in use - without the close and read the
-		//connections in grow without being released.
-		defer resp.Body.Close()
-		ioutil.ReadAll(resp.Body)
+		go func() {
 
-		statusChannel <- resp.StatusCode == 200
-	}()
+			resp, err := client.Get(endpoint)
+			if err != nil {
+				log.Warn("Error doing get on healthcheck endpoint ", endpoint, " : ", err.Error())
 
-	return statusChannel
+				//Check to see if there's a non-nil response: drain it if present
+				if resp != nil {
+					log.Info("clean up non-nil response delivered with health check client error")
+					defer resp.Body.Close()
+					b, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						log.Infof("Error reading resp while cleaning up after error: %v\n", err)
+					} else {
+						log.Infof("Discarded response body after handling error on healtcheck get: %s\n", b)
+					}
+				}
+
+				statusChannel <- false
+				return
+			}
+
+			//Read the entire response and close the body to ensure proper connection hygiene. On the mac you
+			//can use something like lsof | grep xavi|wc -l  (and check/timeout values
+			//of 5000/2000 ms respectively) to see file handles in use - without the close and read the
+			//connections in grow without being released.
+			defer resp.Body.Close()
+			_,err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Warnf("Error reading health check response: %v", err)
+				statusChannel <- false
+				return
+			}
+
+			statusChannel <- resp.StatusCode == 200
+		}()
+
+		return statusChannel
+	}
 }
 
 func makeCertPool(caCertPath string) *x509.CertPool {
@@ -165,10 +186,20 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 		return noop
 	case "http-get":
 		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, false, healthy)
+		healthCheckTimeout := time.Duration(DefaultHealthCheckTimeout)
+		if serverConfig.HealthCheckTimeout > 0 {
+			healthCheckTimeout = time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond
+		}
+		return httpGet(lbEndpoint, serverConfig, loop, false,
+			createHealthCheckFnWithTimeout(healthCheckTimeout))
 	case "https-get":
-		log.Debug("returning http-get health check")
-		return httpGet(lbEndpoint, serverConfig, loop, true, healthy)
+		log.Debug("returning https-get health check")
+		healthCheckTimeout := time.Duration(DefaultHealthCheckTimeout)
+		if serverConfig.HealthCheckTimeout > 0 {
+			healthCheckTimeout = time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond
+		}
+		return httpGet(lbEndpoint, serverConfig, loop, true,
+			createHealthCheckFnWithTimeout(healthCheckTimeout))
 	case "custom-http":
 		log.Info("return custom health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
