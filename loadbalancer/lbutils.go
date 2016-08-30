@@ -16,6 +16,8 @@ type BackendLoadBalancer struct {
 	LoadBalancer  LoadBalancer
 	BackendConfig *config.BackendConfig
 	CertPool      *x509.CertPool
+	httpTransport *http.Transport
+	httpsTransport *http.Transport
 }
 
 var ErrBackendNotFound = errors.New("Given backed end not found in active listener config")
@@ -96,9 +98,22 @@ func NewBackendLoadBalancer(backendName string) (*BackendLoadBalancer, error) {
 		return nil, err
 	}
 
+	//Create TLS transport
+	tlsConfig := &tls.Config{RootCAs: certPool}
+	httpsTransport := &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig}
+
+	//Create non-TLS transport
+	httpTransport :=  &http.Transport{DisableKeepAlives: false, DisableCompression: false}
+
 	lb, err := factory.NewLoadBalancer(backendConfig.Name, backendConfig.CACertPath, servers)
 
-	return &BackendLoadBalancer{LoadBalancer: lb, BackendConfig: backendConfig, CertPool: certPool}, err
+	return &BackendLoadBalancer{
+		LoadBalancer: lb,
+		BackendConfig: backendConfig,
+		CertPool: certPool,
+		httpsTransport:httpsTransport,
+		httpTransport:httpTransport,
+	}, err
 }
 
 func (lb *BackendLoadBalancer) DoWithLoadBalancer(ctx context.Context, req *http.Request, useTLS bool) (*http.Response, error) {
@@ -114,12 +129,11 @@ func (lb *BackendLoadBalancer) DoWithLoadBalancer(ctx context.Context, req *http
 	var transport *http.Transport
 	if useTLS == true {
 		log.Debug("Configuring TLS transport")
-		tlsConfig := &tls.Config{RootCAs: lb.CertPool}
-		transport = &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig}
+		transport = lb.httpsTransport
 		req.URL.Scheme = "https"
 	} else {
 		log.Debug("Configuring non-TLS transport")
-		transport = &http.Transport{DisableKeepAlives: false, DisableCompression: false}
+		transport = lb.httpTransport
 		req.URL.Scheme = "http"
 	}
 
