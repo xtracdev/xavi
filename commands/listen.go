@@ -36,6 +36,8 @@ func (l *Listen) Help() string {
 
 //Run executes the Listen command with the supplied arguments
 func (l *Listen) Run(args []string) int {
+	config.ListenContext = true
+
 	var listener, address, cpuprofile string
 	cmdFlags := flag.NewFlagSet("listen", flag.ContinueOnError)
 	cmdFlags.Usage = func() { l.UI.Error(l.Help()) }

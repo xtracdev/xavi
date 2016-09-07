@@ -14,12 +14,12 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"github.com/xtracdev/xavi/config"
 )
 
 //Build version is set via the command line, e.g.
 //go build -ldflags "-X github.com/xtracdev/xavi/runner.BuildVersion=20160129.1"
 var BuildVersion string
-
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -131,6 +131,10 @@ func Run(args []string, pluginRegistrationFn func()) {
 	log.Info(version)
 	fireUpPProf()
 	kvs := setupXAVIEnvironment(pluginRegistrationFn)
+
+	if len(os.Args) > 1 && os.Args[1] == "listen" {
+		config.ListenContext = true
+	}
 
 	for _, f := range initKVSFuncs {
 		err := f(kvs)
