@@ -77,7 +77,7 @@ func createHealthCheckFnWithTimeout(healthCheckTimeout time.Duration) config.Hea
 			//of 5000/2000 ms respectively) to see file handles in use - without the close and read the
 			//connections in grow without being released.
 			defer resp.Body.Close()
-			_,err = ioutil.ReadAll(resp.Body)
+			_, err = ioutil.ReadAll(resp.Body)
 			if err != nil {
 				log.Warnf("Error reading health check response: %v", err)
 				statusChannel <- false
