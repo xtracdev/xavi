@@ -14,3 +14,6 @@ func readKey(key string, kvs kvstore.KVStore) ([]byte, error) {
 	log.Info("Read key " + key)
 	return kvs.Get(key)
 }
+
+//ListenContext is set to true if the listen command is being executed
+var ListenContext bool

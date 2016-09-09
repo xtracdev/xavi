@@ -13,10 +13,10 @@ import (
 )
 
 type BackendLoadBalancer struct {
-	LoadBalancer  LoadBalancer
-	BackendConfig *config.BackendConfig
-	CertPool      *x509.CertPool
-	httpTransport *http.Transport
+	LoadBalancer   LoadBalancer
+	BackendConfig  *config.BackendConfig
+	CertPool       *x509.CertPool
+	httpTransport  *http.Transport
 	httpsTransport *http.Transport
 }
 
@@ -103,16 +103,16 @@ func NewBackendLoadBalancer(backendName string) (*BackendLoadBalancer, error) {
 	httpsTransport := &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig}
 
 	//Create non-TLS transport
-	httpTransport :=  &http.Transport{DisableKeepAlives: false, DisableCompression: false}
+	httpTransport := &http.Transport{DisableKeepAlives: false, DisableCompression: false}
 
 	lb, err := factory.NewLoadBalancer(backendConfig.Name, backendConfig.CACertPath, servers)
 
 	return &BackendLoadBalancer{
-		LoadBalancer: lb,
-		BackendConfig: backendConfig,
-		CertPool: certPool,
-		httpsTransport:httpsTransport,
-		httpTransport:httpTransport,
+		LoadBalancer:   lb,
+		BackendConfig:  backendConfig,
+		CertPool:       certPool,
+		httpsTransport: httpsTransport,
+		httpTransport:  httpTransport,
 	}, err
 }
 

@@ -138,7 +138,9 @@ func TestHCCustomHealthy(t *testing.T) {
 		return statusChannel
 	}
 
+	config.ListenContext = true
 	config.RegisterHealthCheckForServer(kvs, "server1", hcfn)
+	config.ListenContext = false
 
 	//Create the healthcheck function and invoke it
 	healthcheckFn := MakeHealthCheck(lbEndpoint, serverConfig, false)

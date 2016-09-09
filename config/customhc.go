@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/xtracdev/xavi/kvstore"
 	"net/http"
+	log "github.com/Sirupsen/logrus"
 )
 
 //HealthCheckFn defines the signature of custom health checks
@@ -24,9 +25,16 @@ func HealthCheckForServer(server string) HealthCheckFn {
 }
 
 //RegisterHealthCheckForServer registers a custom health check function for a given server. The
-//configuration store is check for the existance of the specified server definition prior to
+//configuration store is check for the existence of the specified server definition prior to
 //storing the health check function.
 func RegisterHealthCheckForServer(kvs kvstore.KVStore, server string, hcfn HealthCheckFn) error {
+	//Health check registration is done when starting a listener, and relies on several
+	//configuration definitions having been defined earlier. For the case where the framework
+	//is not being used to run a listener, we do not attempt to register the health check.
+	if ListenContext == false {
+		return nil
+	}
+
 	//Must register something if this is called.
 	if hcfn == nil {
 		return ErrNoHealthCheckFn
@@ -49,6 +57,18 @@ func RegisterHealthCheckForServer(kvs kvstore.KVStore, server string, hcfn Healt
 //RegisterHealthCheckForBackend registers the given health check for every server associated with the
 //given backend
 func RegisterHealthCheckForBackend(kvs kvstore.KVStore, backend string, hcfn HealthCheckFn) error {
+	log.Infof("Registering custom health check function for %s", backend)
+
+	//Health check registration is done when starting a listener, and relies on several
+	//configuration definitions having been defined earlier. For the case where the framework
+	//is not being used to run a listener, we do not attempt to register the health check.
+	if ListenContext == false {
+		log.Info("Context indicates not listening - ignoring registration of custom health check")
+		return nil
+	}
+
+
+
 	//Must register something if this is called.
 	if hcfn == nil {
 		return ErrNoHealthCheckFn
