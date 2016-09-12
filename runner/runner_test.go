@@ -73,8 +73,13 @@ func TestFireUpPProf(t *testing.T) {
 }
 
 func TestVersionDefault(t *testing.T) {
-	args := []string{"mystuff", "-version"}
-	version, exit := dumpVersionAndExit(args)
+	osArgs := os.Args
+	defer func() {
+		os.Args = osArgs
+	}()
+
+	os.Args = []string{"mystuff", "-version"}
+	version, exit := dumpVersionAndExit()
 	assert.True(t, strings.Contains(version, "mystuff: no build version specified"))
 	assert.True(t, strings.Contains(version, "–X –ldflags option"))
 	assert.True(t, exit)
@@ -82,14 +87,24 @@ func TestVersionDefault(t *testing.T) {
 
 func TestVersionNonDefault(t *testing.T) {
 	BuildVersion = "666"
-	args := []string{"mycoolapi", "-version"}
-	version, exit := dumpVersionAndExit(args)
+	osArgs := os.Args
+	defer func() {
+		os.Args = osArgs
+	}()
+
+	os.Args = []string{"mycoolapi", "-version"}
+	version, exit := dumpVersionAndExit()
 	assert.Equal(t, "mycoolapi: build version 666", version)
 	assert.True(t, exit)
 }
 
 func TestVersionNoExit(t *testing.T) {
-	args := []string{"a", "b"}
-	_, exit := dumpVersionAndExit(args)
+	osArgs := os.Args
+	defer func() {
+		os.Args = osArgs
+	}()
+
+	os.Args = []string{"a", "b"}
+	_, exit := dumpVersionAndExit()
 	assert.False(t, exit)
 }

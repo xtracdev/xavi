@@ -9,12 +9,12 @@ import (
 	"net/http"
 
 	//Needed to pickup the package imports for the profiler
+	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/info"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"strings"
-	"github.com/xtracdev/xavi/config"
 )
 
 //Build version is set via the command line, e.g.
@@ -91,7 +91,7 @@ const versionNotSpecified = `%s%s: no build version specified. A version can be 
 command line using the –X –ldflags option, for example
 go build -ldflags "-X github.com/xtracdev/xavi/runner.BuildVersion=20160129.1"`
 
-func dumpVersionAndExit(args []string) (string, bool) {
+func dumpVersionAndExit() (string, bool) {
 	var versionFormat string
 
 	switch BuildVersion {
@@ -101,8 +101,8 @@ func dumpVersionAndExit(args []string) (string, bool) {
 		versionFormat = "%s: build version %s"
 	}
 
-	output := fmt.Sprintf(versionFormat, args[0], BuildVersion)
-	return output, len(args) == 2 && args[1] == "-version"
+	output := fmt.Sprintf(versionFormat, os.Args[0], BuildVersion)
+	return output, len(os.Args) == 2 && os.Args[1] == "-version"
 }
 
 //KVSCallbackFn defines a function type that can be registered with
@@ -118,9 +118,10 @@ func AddKVSCallbackFunction(f KVSCallbackFn) {
 	}
 }
 
-//Run starts a process delegating to the shell.DoMain function
+//Run starts a process delegating to the shell.DoMain function. Typically
+//os.Args[1:] is passed as the input to this function.
 func Run(args []string, pluginRegistrationFn func()) {
-	version, exit := dumpVersionAndExit(os.Args)
+	version, exit := dumpVersionAndExit()
 	if exit == true {
 		fmt.Println(version)
 		os.Exit(0)
@@ -132,7 +133,7 @@ func Run(args []string, pluginRegistrationFn func()) {
 	fireUpPProf()
 	kvs := setupXAVIEnvironment(pluginRegistrationFn)
 
-	if len(os.Args) > 1 && os.Args[1] == "listen" {
+	if len(args) > 0 && args[0] == "listen" {
 		config.ListenContext = true
 	}
 
