@@ -8,10 +8,12 @@ import (
 	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
+	"github.com/xtracdev/xavi/timer"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -56,10 +58,12 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 		//Record call time contribution
+		var timerFromContext = true
 		rt := timing.TimerFromContext(ctx)
 		if rt == nil {
-			http.Error(w, "No EndToEndTimer found in call context", http.StatusInternalServerError)
-			return
+			timerFromContext = false
+			log.Warn("No EndToEndTimer found in call context - fake it")
+			rt = timer.NewEndToEndTimer("context-missing-timer")
 		}
 
 		timingContributor := rt.StartContributor(backendName(rh.Backend.Name))
@@ -68,6 +72,9 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			timingContributor.End(err)
+			if timerFromContext == false {
+				fmt.Fprintln(os.Stderr, rt.ToJSONString())
+			}
 			return
 		}
 
@@ -118,6 +125,9 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 
 			fmt.Fprintf(w, "Error: %v", err)
 			timingContributor.End(err)
+			if timerFromContext == false {
+				fmt.Fprintln(os.Stderr, rt.ToJSONString())
+			}
 			return
 		}
 
@@ -136,6 +146,9 @@ func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w htt
 		resp.Body.Close()
 
 		timingContributor.End(nil)
+		if timerFromContext == false {
+			fmt.Fprintln(os.Stderr, rt.ToJSONString())
+		}
 	}
 }
 

@@ -2,9 +2,9 @@ package config
 
 import (
 	"errors"
+	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/kvstore"
 	"net/http"
-	log "github.com/Sirupsen/logrus"
 )
 
 //HealthCheckFn defines the signature of custom health checks
@@ -66,8 +66,6 @@ func RegisterHealthCheckForBackend(kvs kvstore.KVStore, backend string, hcfn Hea
 		log.Info("Context indicates not listening - ignoring registration of custom health check")
 		return nil
 	}
-
-
 
 	//Must register something if this is called.
 	if hcfn == nil {

@@ -94,6 +94,7 @@ func init() {
 		//Baseline the imposter request counts
 		endpointOutput, err := testsupport.GetTestEndpointOutput(server1Url)
 		assert.Nil(T, err)
+		log.Infof("Counting requests from %s for %s", endpointOutput, server1Url)
 		server1RequestCount = testsupport.CountRequestFrom(endpointOutput)
 
 		endpointOutput, err = testsupport.GetTestEndpointOutput(server2Url)
@@ -110,9 +111,9 @@ func init() {
 		if testFailure {
 			return
 		}
-		log.Info("send request")
+		log.Infof("send request to %s", testUrl)
 		assert.Equal(T, 200, testsupport.GetTestEndpoint(testUrl))
-		log.Info("send request")
+		log.Infof("send request to %s", testUrl)
 		assert.Equal(T, 200, testsupport.GetTestEndpoint(testUrl))
 
 	})
@@ -134,8 +135,8 @@ func init() {
 		log.Info("updated server 1 request count: ", latestServer1Count)
 		log.Info("update server 2 request count: ", latestServer2Count)
 
-		assert.Equal(T, server1RequestCount+2, latestServer1Count)
-		assert.Equal(T, server2RequestCount+2, latestServer2Count)
+		assert.Equal(T, server1RequestCount+1, latestServer1Count)
+		assert.Equal(T, server2RequestCount+1, latestServer2Count)
 
 	})
 

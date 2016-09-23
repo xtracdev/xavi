@@ -52,12 +52,12 @@ func init() {
 
 	StandaloneMountebackEndpointBaseURL = os.Getenv("XAVI_AT_STANDALONE_MB")
 	if StandaloneMountebackEndpointBaseURL == "" {
-		StandaloneMountebackEndpointBaseURL = "http://localhost:3636"
+		StandaloneMountebackEndpointBaseURL = "http://localhost:2626"
 	}
 
 	CohostedMountebankEndpointBaseURL = os.Getenv("XAVI_AT_COHOSTED_MB")
 	if CohostedMountebankEndpointBaseURL == "" {
-		CohostedMountebankEndpointBaseURL = "http://localhost:3535"
+		CohostedMountebankEndpointBaseURL = "http://localhost:2525"
 	}
 
 }
@@ -332,12 +332,9 @@ func SpawnTestContainers() map[string]string {
 
 	containerMapping := make(map[string]string)
 
-	//Grab the environment
-	dockerHost, dockerCertPath := testcontainer.ReadDockerEnv()
-
 	// Init the client
 	log.Println("Create docker client")
-	docker, _ := dockerclient.NewDockerClient(dockerHost, testcontainer.BuildDockerTLSConfig(dockerCertPath))
+	docker, _ := dockerclient.NewDockerClient("unix:///var/run/docker.sock", nil)
 
 	// Is the mountebank container already running?
 	log.Println("Check to see if mountebank test container is already started")
@@ -400,11 +397,8 @@ func StopAndRemoveContainers(containers map[string]string) {
 		return
 	}
 
-	//Grab the environment
-	dockerHost, dockerCertPath := testcontainer.ReadDockerEnv()
-
 	// Init the client
-	docker, _ := dockerclient.NewDockerClient(dockerHost, testcontainer.BuildDockerTLSConfig(dockerCertPath))
+	docker, _ := dockerclient.NewDockerClient("unix:///var/run/docker.sock", nil)
 
 	log.Info("stop test containers")
 
