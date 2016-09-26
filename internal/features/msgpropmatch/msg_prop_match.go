@@ -144,8 +144,8 @@ func init() {
 		log.Info("updated server 1 request count: ", latestServer1Count)
 		log.Info("update server 2 request count: ", latestServer2Count)
 
-		assert.Equal(T, server1RequestCount+2, latestServer1Count)
-		assert.Equal(T, server2RequestCount+2, latestServer2Count)
+		assert.Equal(T, server1RequestCount+1, latestServer1Count)
+		assert.Equal(T, server2RequestCount+1, latestServer2Count)
 	})
 
 	After("@msgpropmatch", func() {

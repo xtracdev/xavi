@@ -2,7 +2,9 @@
 
 # Start the co-hosted mountebank server. We need one in the same container to
 # allow testing of the pref-local load balancing policy.
-mb&
+
+# Note --mock is now required to record requests
+mb --mock&
 
 # Boot XAVI in rest agent mode
 export XAVI_KVSTORE_URL=file:///opt/xtrac-xavi/xavikeystore

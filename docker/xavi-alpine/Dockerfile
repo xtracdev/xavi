@@ -1,8 +1,10 @@
 # Start with the image that has mountebank installed
 FROM mb-server-alpine
-MAINTAINER Doug Smith "doug.smith@fmr.com"
-#ENV http_proxy http://<proxy server ip address>:<proxy server port>
-#ENV https_proxy http://<proxy server ip address>:<proxy server port>
+
+ENV HTTP_PROXY ${HTTP_PROXY}
+ENV HTTPS_PROXY ${HTTPS_PROXY}
+ENV http_proxy ${HTTP_PROXY}
+ENV https_proxy ${HTTPS_PROXY}
 
 ADD run-xavi.sh /opt/xtrac-xavi/
 ADD xavi /usr/local/bin/

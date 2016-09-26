@@ -96,39 +96,16 @@ package.
 
 	lsof -n -i4TCP
 
-### Acceptance Testing Setup with Docker-Machine
+### Acceptance Testing Setup with Docker for Mac
 
-Assuming you are working on a mac, you'll need to install the docker tools and docker machine
-to run docker, which is needed for running the Xavi acceptance tests.
+Assuming you are working on a mac, install Docker for Mac to use the docker based
+gucumber tests. Docker for Mac works pretty good, definitely friendlier than
+docker machine on the Mac now that it's out of beta.
 
-If you are attached to a network that uses an http proxy to connect to the internet, you'll need
-to update the docker daemon proxy settings in the docker VM. To do so:
-
-1. Connect to the default machine via `docker-machine -D ssh default`
-2. `sudo vi /var/lib/boot2docker/profile ` and export proxy setting environment variables
-(export HTTP_PROXY=http://<proxy host>:<proxy port>, export HTTPS_PROXY=http://<proxy host>:<proxy port>
-placed on separate lines).
-3. Restart the VM. You can use the Virtual Box client to do this.
-4. You will also need to edit the Dockerfiles mentioned below to uncomment out the proxy ENV
-lines, and add your proxy server IP address and port.
-
-The tests are written assuming the following port configuration:
-
-<pre>
-VBoxManage controlvm default natpf1 "standalone-mb,tcp,127.0.0.1,3636,,2626"
-VBoxManage controlvm default natpf1 "cohosted-mb,tcp,127.0.0.1,3535,,2525"
-VBoxManage controlvm default natpf1 "xavi-rest-agent,tcp,127.0.0.1,8080,,8080"
-VBoxManage controlvm default natpf1 "xavi-test-server,tcp,127.0.0.1,9000,,9000"
-</pre>
-
-Once docker machine is configured correctly, you can run the acceptance tests in a freshly clone repo like this:
-
-<pre>
-go get github.com/lsegal/gucumber/cmd/gucumber
-docker-machine start default
-eval "$(docker-machine env default)"
-gucumber
-</pre>
+Once docker machine is configured correctly, you can run the acceptance tests 
+using gucumber. Note that this version vendors an older version of gucumber, so
+do a `go install` in the appropriate vendor directory to put the right
+version of the command in your path.
 
 #### Mountebank
 
@@ -145,8 +122,15 @@ Build the Mountebank server image in the docker/mountebank-alpine directory:
 
 <pre>
 docker build -t "mb-server-alpine" .
+</pre>
+
+You can run it like this:
+
+</pre>
 docker run -d -p 2626:2525 --name mountebank --label 'xt-container-type=atest-mb' mb-server-alpine
 </pre>
+
+If you are behind a proxy pass the proxy info via build args, e.g. `docker build --build-arg HTTP_PROXY=something --build-arg HTTPS_PROXY=etc.`
 
 #### XAVI Docker set up
 
