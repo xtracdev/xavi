@@ -1,12 +1,12 @@
 package loadbalancer
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/config"
-	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"

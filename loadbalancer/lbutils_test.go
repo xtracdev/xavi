@@ -1,10 +1,10 @@
 package loadbalancer
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net"
 	"net/http"

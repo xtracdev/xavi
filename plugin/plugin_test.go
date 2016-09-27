@@ -3,7 +3,6 @@ package plugin
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -22,14 +21,14 @@ type AWrapper struct {
 }
 
 //Wrap wraps http.Handlers with A stuff
-func (aw AWrapper) Wrap(h ContextHandler) ContextHandler {
-	return ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTPContext(ctx, w, r)
+func (aw AWrapper) Wrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
 		w.Write([]byte("A wrapper wrote this\n"))
 	})
 }
 
-func handleCall(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func handleCall(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("handleCall wrote this stuff\n"))
 }
 
@@ -61,12 +60,7 @@ func TestPluginRegisterPlugins(t *testing.T) {
 	assert.Equal(t, 1, len(factories))
 	handler := WrapHandlerFunc(handleCall, factories)
 
-	adaptedHandler := &ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adaptedHandler)
+	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
 	testURL := fmt.Sprintf("%s/foo", ts.URL)
@@ -99,12 +93,7 @@ func TestPluginWrapHandlerFunc(t *testing.T) {
 	hf := WrapHandlerFunc(handleCall, factories)
 	assert.NotNil(t, hf)
 
-	adaptedHandler := &ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: hf,
-	}
-
-	ts := httptest.NewServer(adaptedHandler)
+	ts := httptest.NewServer(hf)
 	defer ts.Close()
 
 	testURL := fmt.Sprintf("%s/foo", ts.URL)

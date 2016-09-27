@@ -7,7 +7,6 @@ import (
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -32,15 +31,13 @@ func makeTestWrapper() plugin.Wrapper {
 
 type testWrapper struct{}
 
-func (aw testWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
-	return plugin.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (aw testWrapper) Wrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec := httptest.NewRecorder()
-		h.ServeHTTPContext(ctx, rec, r)
-
+		h.ServeHTTP(rec, r)
 		upperOut := strings.ToUpper(string(rec.Body.Bytes()))
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(upperOut))
-
 	})
 }
 
@@ -86,12 +83,9 @@ func TestPostRequest(t *testing.T) {
 	}
 
 	t.Log("When the echo server is proxied")
-	handlerFn := requestHandler.toContextHandlerFunc()
+	handlerFn := requestHandler.toHandlerFunc()
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: timing.NewTimingWrapper().Wrap(plugin.ContextHandlerFunc(handlerFn)),
-	}
+	adapter := timing.NewTimingWrapper().Wrap(http.HandlerFunc(handlerFn))
 
 	ts2 := httptest.NewServer(adapter)
 	defer ts2.Close()
@@ -130,19 +124,15 @@ func TestPostRequestWithPlugin(t *testing.T) {
 		Backend:   backend,
 	}
 
-	handlerFn := requestHandler.toContextHandlerFunc()
+	handlerFn := requestHandler.toHandlerFunc()
 
 	wrapper := makeTestWrapper()
-	wrappedHandler := (wrapper.Wrap(plugin.ContextHandlerFunc(handlerFn)))
+	wrappedHandler := (wrapper.Wrap(http.HandlerFunc(handlerFn)))
 	wrappedHandler = timing.NewTimingWrapper().Wrap(wrappedHandler)
 
 	t.Log("When the echo server is proxied with a wrapped handler")
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: wrappedHandler,
-	}
-	ts2 := httptest.NewServer(adapter)
+	ts2 := httptest.NewServer(wrappedHandler)
 	defer ts2.Close()
 
 	payload := `
@@ -219,7 +209,7 @@ func makeTestBackends(t *testing.T, testServerURL string, loadBalancerPolicyName
 
 func makeListenerWithMultiRoutesForTest(t *testing.T, loadBalancerPolicyName string) *managedService {
 
-	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("b stuff"))
 
 		_, ok := m["A"]
@@ -374,7 +364,7 @@ func validateURIToGuardAndHandlerMapping(ghMap map[string][]guardAndHandler, t *
 	assert.True(t, match)
 }
 
-func validateURIHandlerMap(handlers map[string]plugin.ContextHandler, t *testing.T) {
+func validateURIHandlerMap(handlers map[string]http.Handler, t *testing.T) {
 	assert.Equal(t, 2, len(handlers))
 	assert.NotNil(t, handlers["/foo"])
 	assert.NotNil(t, handlers["/bar"])
@@ -383,12 +373,7 @@ func validateURIHandlerMap(handlers map[string]plugin.ContextHandler, t *testing
 	handler := handlers["/foo"]
 	handler = timing.NewTimingWrapper().Wrap(handler)
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adapter)
+	ts := httptest.NewServer(handler)
 	t.Log("test server url", ts.URL)
 	defer ts.Close()
 
@@ -445,12 +430,7 @@ func TestGuardFnGenWithBrokerHeaderProp(t *testing.T) {
 	handler := uriHandlerMap["/foo"]
 	handler = timing.NewTimingWrapper().Wrap(handler)
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adapter)
+	ts := httptest.NewServer(handler)
 	t.Log("test server url", ts.URL)
 	defer ts.Close()
 

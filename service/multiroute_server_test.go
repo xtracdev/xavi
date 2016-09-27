@@ -6,7 +6,6 @@ import (
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -38,17 +37,17 @@ func handleBStuff(w http.ResponseWriter, r *http.Request) {
 func TestMRConfigListener(t *testing.T) {
 	log.SetLevel(log.InfoLevel)
 
-	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var bHandler plugin.MultiBackendHandlerFunc = func(m plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(bHandlerStuff))
 
 		ah := m[backendA]
 		ar := httptest.NewRecorder()
-		ah.ServeHTTPContext(ctx, ar, r)
+		ah.ServeHTTP(ar, r)
 		assert.Equal(t, aBackendResponse, ar.Body.String())
 
 		bh := m[backendB]
 		br := httptest.NewRecorder()
-		bh.ServeHTTPContext(ctx, br, r)
+		bh.ServeHTTP(br, r)
 		assert.Equal(t, bBackendResponse, br.Body.String())
 	}
 
@@ -75,11 +74,7 @@ func TestMRConfigListener(t *testing.T) {
 
 	assert.Equal(t, 1, len(uriHandlerMap))
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: timing.NewTimingWrapper().Wrap(uriHandlerMap[fooURI]),
-	}
-	ls := httptest.NewServer(adapter)
+	ls := httptest.NewServer(timing.NewTimingWrapper().Wrap(uriHandlerMap[fooURI]))
 	defer ls.Close()
 
 	resp, err := http.Get(ls.URL + fooURI)

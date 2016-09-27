@@ -4,7 +4,6 @@ import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
-	"golang.org/x/net/context"
 	"net/http"
 )
 
@@ -50,8 +49,8 @@ var defaultRecoveryContext = RecoveryContext{
 }
 
 //Wrap wraps the context handler with panic recovery capability.
-func (rcw RecoveryWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
-	return plugin.ContextHandlerFunc(func(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
+func (rcw RecoveryWrapper) Wrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rc := rcw.RecoveryContext
 
 		defer func() {
@@ -61,6 +60,6 @@ func (rcw RecoveryWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
 				http.Error(rw, rc.ErrorMessageFn(r), http.StatusInternalServerError)
 			}
 		}()
-		h.ServeHTTPContext(ctx, rw, req)
+		h.ServeHTTP(rw, req)
 	})
 }

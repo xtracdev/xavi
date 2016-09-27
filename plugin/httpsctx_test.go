@@ -1,8 +1,8 @@
 package plugin
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,29 +10,29 @@ import (
 
 var contextVal bool
 
-func httpsContextHandler(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
-	contextVal = GetUseHttpsContext(ctx)
-	rw.WriteHeader(http.StatusOK)
+func httpsHandler(rw http.ResponseWriter, req *http.Request) {
+	contextVal = GetUseHttpsContext(req.Context())
+	rw.WriteHeader(http.StatusNoContent)
+}
+
+func requestIdMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		req = req.WithContext(AddUseHttpsToContext(req.Context(), true))
+		println("-->Request id serve http")
+		h.ServeHTTP(rw, req)
+		println("<--Request id http served")
+	})
 }
 
 func TestWithHttpsCtx(t *testing.T) {
-	ctx := context.Background()
-	ctx = AddUseHttpsToContext(ctx, true)
-
-	h := &ContextAdapter{
-		Ctx:     ctx,
-		Handler: requestIdMiddleware(ContextHandlerFunc(httpsContextHandler)),
-	}
-
-	ts := httptest.NewServer(h)
+	ts := httptest.NewServer(requestIdMiddleware(http.HandlerFunc(httpsHandler)))
 	defer ts.Close()
 
-	_, err := http.Get(ts.URL)
+	resp, err := http.Get(ts.URL)
 
-	if assert.Nil(t, err) {
-		assert.True(t, contextVal)
-	}
-
+	assert.Nil(t, err)
+	assert.True(t, contextVal)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
 func TestAddUseContext(t *testing.T) {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"container/list"
+	"context"
 	"expvar"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -9,7 +10,6 @@ import (
 	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/timing"
 	"github.com/xtracdev/xavi/timer"
-	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"io"
 	"net/http"
@@ -54,8 +54,10 @@ func backendName(name string) string {
 }
 
 //Create a handler function from a requestHandler
-func (rh *requestHandler) toContextHandlerFunc() func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (rh *requestHandler) toHandlerFunc() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
 
 		//Record call time contribution
 		var timerFromContext = true

@@ -2,10 +2,9 @@ package timing
 
 import (
 	"bytes"
+	"context"
 	"github.com/stretchr/testify/assert"
-	"github.com/xtracdev/xavi/plugin"
 	"github.com/xtracdev/xavi/plugin/logging"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,8 +12,8 @@ import (
 	"time"
 )
 
-func handleBar(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
-	timerCtx := TimerFromContext(ctx)
+func handleBar(rw http.ResponseWriter, req *http.Request) {
+	timerCtx := TimerFromContext(req.Context())
 	if timerCtx == nil {
 		println("damn no context")
 		http.Error(rw, "No context", http.StatusInternalServerError)
@@ -39,18 +38,13 @@ func TestServiceNameContextNotPresent(t *testing.T) {
 func TestContextPresent(t *testing.T) {
 	wrapperFactory := logging.NewLoggingWrapper()
 	assert.NotNil(t, wrapperFactory)
-	handler := wrapperFactory.Wrap(plugin.ContextHandlerFunc(handleBar))
+	handler := wrapperFactory.Wrap(http.HandlerFunc(handleBar))
 
 	timerWrapper := NewTimingWrapper()
 
 	handler = timerWrapper.Wrap(handler)
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adapter)
+	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
 	res, err := http.Post(ts.URL, "application/json", bytes.NewBuffer([]byte("Some stuff")))
