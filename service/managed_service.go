@@ -10,7 +10,6 @@ import (
 	"crypto/tls"
 	log "github.com/Sirupsen/logrus"
 	"github.com/xtracdev/xavi/plugin"
-	"golang.org/x/net/context"
 )
 
 //Managed service contains the configuration we boot a listener from.
@@ -61,7 +60,7 @@ type guardFunction func(req *http.Request) (bool, error)
 //request if the guard condition is satisfied.
 type guardAndHandler struct {
 	Guard     guardFunction
-	HandlerFn plugin.ContextHandlerFunc
+	HandlerFn http.HandlerFunc
 }
 
 func makeGHEntryForSingleBackendRoute(r route) guardAndHandler {
@@ -75,7 +74,7 @@ func makeGHEntryForSingleBackendRoute(r route) guardAndHandler {
 		Backend:      r.Backends[0],
 	}
 
-	handlerFn := requestHandler.toContextHandlerFunc()
+	handlerFn := requestHandler.toHandlerFunc()
 
 	handler := plugin.WrapHandlerFunc(handlerFn, r.WrapperFactories)
 
@@ -111,9 +110,9 @@ func makeGHEntryForMultipleBackends(r route) guardAndHandler {
 			Backend:      backend,
 		}
 
-		var handlerFn plugin.ContextHandlerFunc = requestHandler.toContextHandlerFunc()
+		handlerFn := requestHandler.toHandlerFunc()
 
-		handlerMap[backend.Name] = plugin.ContextHandlerFunc(handlerFn)
+		handlerMap[backend.Name] = http.HandlerFunc(handlerFn)
 	}
 
 	//Use the factory to create a wrapped handler that can service the requests
@@ -152,8 +151,8 @@ func mapRoutesToGuardAndHandler(uriRouteMap map[string][]route) map[string][]gua
 
 //Make a uri handler map by reducing the guarded URI handlers into a single handler that
 //delegates the call to the first matching route guard condition.
-func makeURIHandlerMap(ghMap map[string][]guardAndHandler) map[string]plugin.ContextHandler {
-	handlerMap := make(map[string]plugin.ContextHandler)
+func makeURIHandlerMap(ghMap map[string][]guardAndHandler) map[string]http.Handler {
+	handlerMap := make(map[string]http.Handler)
 	for uri, guardAndHandlers := range ghMap {
 		handlerMap[uri] = reduceHandlers(guardAndHandlers)
 	}
@@ -162,9 +161,9 @@ func makeURIHandlerMap(ghMap map[string][]guardAndHandler) map[string]plugin.Con
 
 //Reduce handlers creates a single handler function from all the guarded and unguarded handlers
 //associated with a route URI.
-func reduceHandlers(guardHandlerPairs []guardAndHandler) plugin.ContextHandler {
+func reduceHandlers(guardHandlerPairs []guardAndHandler) http.Handler {
 	log.Debug("reduceHandlers called")
-	return plugin.ContextHandlerFunc(func(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		var handled = false
 		for _, ghPair := range guardHandlerPairs {
 			guardSatisfied, err := ghPair.Guard(req)
@@ -176,7 +175,7 @@ func reduceHandlers(guardHandlerPairs []guardAndHandler) plugin.ContextHandler {
 			if guardSatisfied {
 				handled = true
 				handlerFn := ghPair.HandlerFn
-				handlerFn(ctx, rw, req)
+				handlerFn(rw, req)
 				break
 			}
 		}
@@ -239,7 +238,7 @@ func orderRoutes(routes []route) []route {
 	return append(guarded, unguarded...)
 }
 
-func (ms *managedService) mapUrisToRoutes() map[string]plugin.ContextHandler {
+func (ms *managedService) mapUrisToRoutes() map[string]http.Handler {
 	log.Debug("Arranging routes by uri and generating handlers")
 	uriToRoutesMap := ms.organizeRoutesByUri()
 	uriToGuardAndHandlerMap := mapRoutesToGuardAndHandler(uriToRoutesMap)
@@ -253,11 +252,7 @@ func (ms *managedService) Run() {
 
 	uriHandlerMap := ms.mapUrisToRoutes()
 	for uri, handler := range uriHandlerMap {
-		adapter := &plugin.ContextAdapter{
-			Ctx:     context.Background(),
-			Handler: handler,
-		}
-		mux.Handle(uri, adapter)
+		mux.Handle(uri, handler)
 	}
 
 	//Health check handler

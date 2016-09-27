@@ -7,13 +7,13 @@ of the timing is logged on completion of the wrapped call chain.
 package timing
 
 import (
+	"context"
 	"expvar"
 	"fmt"
 	"github.com/armon/go-metrics"
 	"github.com/xtracdev/xavi/plugin"
 	_ "github.com/xtracdev/xavi/statsd"
 	"github.com/xtracdev/xavi/timer"
-	"golang.org/x/net/context"
 	"net/http"
 	"os"
 	"strings"
@@ -29,7 +29,7 @@ const serviceNameKey key = -22133
 var counts = expvar.NewMap("counters")
 
 //NewContextWithTimer adds a new timer to the request context
-func NewContextWithTimer(ctx context.Context, req *http.Request) context.Context {
+func NewContextWithTimer(ctx context.Context) context.Context {
 	timer := timer.NewEndToEndTimer("unspecified timer")
 	return context.WithValue(ctx, timerKey, timer)
 }
@@ -70,11 +70,12 @@ func NewTimingWrapper(args ...interface{}) plugin.Wrapper {
 
 //Wrap implements the plugin Wrapper interface, and is used
 //to wrap a handler to put a EndToEndTimer instance into the call context
-func (tw TimingWrapper) Wrap(h plugin.ContextHandler) plugin.ContextHandler {
-	return plugin.ContextHandlerFunc(func(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
-		ctx = NewContextWithTimer(ctx, req)
-		h.ServeHTTPContext(ctx, rw, req)
-		ctxTimer := TimerFromContext(ctx)
+func (tw TimingWrapper) Wrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		ctx := NewContextWithTimer(req.Context())
+		newR := req.WithContext(ctx)
+		h.ServeHTTP(rw, newR)
+		ctxTimer := TimerFromContext(newR.Context())
 		ctxTimer.Stop(nil)
 		go func(t *timer.EndToEndTimer) {
 			logTiming(t)

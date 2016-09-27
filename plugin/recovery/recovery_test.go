@@ -2,14 +2,12 @@ package recovery
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/xtracdev/xavi/plugin"
-	"golang.org/x/net/context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func handleBar(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
+func handleBar(rw http.ResponseWriter, req *http.Request) {
 	panic("Kaboom")
 }
 
@@ -28,14 +26,9 @@ func TestSuppliedContextHandler(t *testing.T) {
 
 	recoveryWrapper := RecoveryWrapper{RecoveryContext: rc}
 
-	handler := recoveryWrapper.Wrap(plugin.ContextHandlerFunc(handleBar))
+	handler := recoveryWrapper.Wrap(http.HandlerFunc(handleBar))
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adapter)
+	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL)
@@ -49,14 +42,9 @@ func TestSuppliedContextHandler(t *testing.T) {
 func TestDefaultContextHandler(t *testing.T) {
 	recoveryWrapper := NewRecoveryWrapper()
 
-	handler := recoveryWrapper.Wrap(plugin.ContextHandlerFunc(handleBar))
+	handler := recoveryWrapper.Wrap(http.HandlerFunc(handleBar))
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adapter)
+	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL)

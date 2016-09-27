@@ -8,13 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xtracdev/xavi/plugin"
-	"golang.org/x/net/context"
 )
 
 var requestBytes []byte
 
-func handleFoo(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
+func handleFoo(rw http.ResponseWriter, req *http.Request) {
 
 	requestBytes, _ = ioutil.ReadAll(req.Body)
 	req.Body.Close()
@@ -28,14 +26,9 @@ func TestLoggingPluginPreservesIO(t *testing.T) {
 
 	wrapperFactory := NewLoggingWrapper()
 	assert.NotNil(t, wrapperFactory)
-	handler := wrapperFactory.Wrap(plugin.ContextHandlerFunc(handleFoo))
+	handler := wrapperFactory.Wrap(http.HandlerFunc(handleFoo))
 
-	adapter := &plugin.ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: handler,
-	}
-
-	ts := httptest.NewServer(adapter)
+	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
 	res, err := http.Post(ts.URL, "application/json", bytes.NewBuffer([]byte("Some stuff")))

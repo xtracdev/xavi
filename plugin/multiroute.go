@@ -2,25 +2,23 @@ package plugin
 
 import (
 	"net/http"
-
-	"golang.org/x/net/context"
 )
 
 //BackendHandlerMap provides a map from backend name to the handler associated with the backend.
-type BackendHandlerMap map[string]ContextHandler
+type BackendHandlerMap map[string]http.Handler
 
 //MultiBackendHandler defines an HTTP handler interface that includes backend handler context.
 type MultiBackendHandler interface {
-	MultiBackendServeHTTP(BackendHandlerMap, context.Context, http.ResponseWriter, *http.Request)
+	MultiBackendServeHTTP(BackendHandlerMap, http.ResponseWriter, *http.Request)
 }
 
 //MultiBackendHandlerFunc defines a handler function that includes backend handler context
-type MultiBackendHandlerFunc func(BackendHandlerMap, context.Context, http.ResponseWriter, *http.Request)
+type MultiBackendHandlerFunc func(BackendHandlerMap, http.ResponseWriter, *http.Request)
 
 //MultiBackendServeHTTP is a method that invokes a MultiBackendHandlerFunc handler with the associated context
 //and request/response arguments
-func (h MultiBackendHandlerFunc) MultiBackendServeHTTP(bhMap BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	h(bhMap, ctx, w, r)
+func (h MultiBackendHandlerFunc) MultiBackendServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+	h(bhMap, w, r)
 }
 
 //MultiBackendAdapter is a type used to adapt a handler function with an additional context argument to
@@ -30,14 +28,14 @@ type MultiBackendAdapter struct {
 	Handler           MultiBackendHandler
 }
 
-func (mra *MultiBackendAdapter) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
+func (mra *MultiBackendAdapter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, w, r)
 }
 
 //ToHandlerFunc converts a MultiBackendAdapter to an http.HandlerFunc
-func (mra *MultiBackendAdapter) ToHandlerFunc() ContextHandlerFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, ctx, w, r)
+func (mra *MultiBackendAdapter) ToHandlerFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mra.Handler.MultiBackendServeHTTP(mra.BackendHandlerCtx, w, r)
 	}
 }
 

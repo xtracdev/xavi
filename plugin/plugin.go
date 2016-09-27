@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"fmt"
+	"net/http"
 )
 
 var registeredWrapperFactories map[string]*WrapperFactoryContext
@@ -61,7 +62,7 @@ func LookupWrapperFactoryCtx(name string) (*WrapperFactoryContext, error) {
 
 //Wrapper defines an interface for things that can wrap http Handlers
 type Wrapper interface {
-	Wrap(ContextHandler) ContextHandler
+	Wrap(http.Handler) http.Handler
 }
 
 //WrapperFactory defines a function that can create something that
@@ -70,14 +71,14 @@ type WrapperFactory func(...interface{}) Wrapper
 
 //WrapHandlerFunc wraps a handler function, which is instantiated using the wrapper
 //factory and arguments to the wrapper factory stored in the wrapper factory context
-func WrapHandlerFunc(hf ContextHandlerFunc, wrapperFactories []*WrapperFactoryContext) ContextHandlerFunc {
+func WrapHandlerFunc(hf http.HandlerFunc, wrapperFactories []*WrapperFactoryContext) http.HandlerFunc {
 	handler := hf
 	for _, factoryCtx := range wrapperFactories {
 		if factoryCtx == nil {
 			continue
 		}
 		wrapper := factoryCtx.factory(factoryCtx.args...)
-		handler = (wrapper.Wrap(handler)).(ContextHandlerFunc)
+		handler = (wrapper.Wrap(handler)).(http.HandlerFunc)
 	}
 
 	return handler

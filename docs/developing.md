@@ -2,13 +2,11 @@
 
 ### Dependency management
 
-Compile dependencies except for golang.org/x/net/context are managed via [Godep](https://github.com/tools/godep) using golang 1.5 vendoring support. Note the
+Compile dependencies except for golang.org/x/net/context are managed via [Godep](https://github.com/tools/godep) using golang vendoring support. Note the
 role of godep is for maintaining the state of the vendor directory; go commands do not need to be
 prefaced with go dep. Get the context dependency via `go get golang.org/x/net/context`
 
 Refer to the godep documentation for how to manage dependencies.
-
-When working with this repository, be sure to export GO15VENDOREXPERIMENT=1
 
 Note when applying commands to all subdirectories, you may wish to exclude the vendor subdirectory. For example,
 when running tests, trying to run tests in the vendor subdirectory will fail because the test dependencies for
@@ -20,9 +18,7 @@ To exlude the vendor directory when running tests, do this:
 go test $(go list ./... | grep -v /vendor/)
 </pre>
 
-If modifying or adding a dependency, the path of least resistence seems to be unset GO15VENDOREXPERIMENT, then restore
-the environment using godep. Remove Godeps and vendor, do your work, then set GO15VENDOREXPERIMENT and save your 
-dependencies. Refer to the godep documentation for details.
+Refer to the godep documentation for updating dependencies.
 
 
 ### Codeship Build Setup
@@ -31,11 +27,10 @@ Setup Commands
 
 <pre>
 cd $HOME
-wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
-tar xvzf go1.5.1.linux-amd64.tar.gz
+wget https://storage.googleapis.com/golang/go1.7.1.linux-amd64.tar.gz
+tar xvzf go1.7.1.linux-amd64.tar.gz
 export GOROOT=$HOME/go
 export PATH=$GOROOT/bin:$PATH
-export GO15VENDOREXPERIMENT=1
 go version
 cd $GOPATH/src/github.com/xtracdev/xavi
 </pre>

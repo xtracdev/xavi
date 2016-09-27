@@ -9,24 +9,24 @@ import (
 
 	"sync"
 
+	"context"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 type TestMRHandler struct{}
 
 const testCtxKey = 100
 
-func handleAStuff(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func handleAStuff(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("a stuff"))
 
-	val, ok := ctx.Value(testCtxKey).(string)
+	val, ok := r.Context().Value(testCtxKey).(string)
 	if ok {
 		w.Write([]byte(val))
 	}
 }
 
-var bHandler MultiBackendHandlerFunc = func(m BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
+var bHandler MultiBackendHandlerFunc = func(m BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("b stuff"))
 
 	_, ok := m["A"]
@@ -34,15 +34,15 @@ var bHandler MultiBackendHandlerFunc = func(m BackendHandlerMap, ctx context.Con
 		w.Write([]byte("backend context A"))
 	}
 
-	val, ok := ctx.Value(testCtxKey).(string)
+	val, ok := r.Context().Value(testCtxKey).(string)
 	if ok {
 		w.Write([]byte(val))
 	}
 }
 
-func (th *TestMRHandler) MultiBackendServeHTTP(bhMap BackendHandlerMap, ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (th *TestMRHandler) MultiBackendServeHTTP(bhMap BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
 	aHandler := bhMap["A"]
-	aHandler.ServeHTTPContext(ctx, w, r)
+	aHandler.ServeHTTP(w, r)
 }
 
 func BMRAFactory(bhMap BackendHandlerMap) *MultiBackendAdapter {
@@ -59,32 +59,23 @@ func ATestMRHandlerFactory(bhMap BackendHandlerMap, mrHandler MultiBackendHandle
 	}
 }
 
-func adaptAWithFooContext() *ContextAdapter {
+func TestMultiBackendHandlerFunc(t *testing.T) {
+
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 
 	adapter := &MultiBackendAdapter{
 		BackendHandlerCtx: handlerMap,
 		Handler:           bHandler,
 	}
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, testCtxKey, "foo")
-
-	return &ContextAdapter{
-		Ctx:     ctx,
-		Handler: adapter.ToHandlerFunc(),
-	}
-}
-
-func TestMultiBackendHandlerFunc(t *testing.T) {
-
-	adapter := adaptAWithFooContext()
-
 	ts := httptest.NewServer(adapter)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL)
+	req, _ := http.NewRequest(http.MethodGet, ts.URL, nil)
+	req = req.WithContext(context.WithValue(req.Context(), testCtxKey, "foo"))
+
+	resp, err := http.DefaultClient.Do(req)
 	assert.Nil(t, err)
 	body, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
@@ -95,21 +86,16 @@ func TestMultiBackendHandlerFunc(t *testing.T) {
 func TestMultiBackendAdapter(t *testing.T) {
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, testCtxKey, "foo")
-
-	ctxAdapter := &ContextAdapter{
-		Ctx:     ctx,
-		Handler: adapter.ToHandlerFunc(),
-	}
-
-	ts := httptest.NewServer(ctxAdapter)
+	ts := httptest.NewServer(adapter)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL)
+	req, _ := http.NewRequest(http.MethodGet, ts.URL, nil)
+	req = req.WithContext(context.WithValue(req.Context(), testCtxKey, "foo"))
+
+	resp, err := http.DefaultClient.Do(req)
 	assert.Nil(t, err)
 	body, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
@@ -131,15 +117,10 @@ func TestMBAWithFactory(t *testing.T) {
 	assert.NotNil(t, factoryFromReg)
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := factoryFromReg(handlerMap)
-	contextHandlerFn := adapter.ToHandlerFunc()
-	ctxAdapter := &ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: contextHandlerFn,
-	}
 
-	ts := httptest.NewServer(ctxAdapter)
+	ts := httptest.NewServer(adapter)
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL)
@@ -166,16 +147,10 @@ func TestMBAWithFactoryConcurrently(t *testing.T) {
 	assert.NotNil(t, factoryFromReg)
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := factoryFromReg(handlerMap)
-	contextHandlerFn := adapter.ToHandlerFunc()
 
-	ctxAdapter := &ContextAdapter{
-		Ctx:     context.Background(),
-		Handler: contextHandlerFn,
-	}
-
-	ts := httptest.NewServer(ctxAdapter)
+	ts := httptest.NewServer(adapter)
 	defer ts.Close()
 
 	var wg sync.WaitGroup
@@ -199,22 +174,18 @@ func TestWrappedPlugin(t *testing.T) {
 	wrapper := NewAWrapper()
 
 	var handlerMap = make(BackendHandlerMap)
-	handlerMap["A"] = ContextHandlerFunc(handleAStuff)
+	handlerMap["A"] = http.HandlerFunc(handleAStuff)
 	adapter := ATestMRHandlerFactory(handlerMap, &TestMRHandler{})
-
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, testCtxKey, "foo")
 
 	wrapped := wrapper.Wrap(adapter.ToHandlerFunc())
 
-	ctxAdapter := &ContextAdapter{
-		Ctx:     ctx,
-		Handler: wrapped,
-	}
-	ts := httptest.NewServer(ctxAdapter)
+	ts := httptest.NewServer(wrapped)
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL)
+	req, _ := http.NewRequest(http.MethodGet, ts.URL, nil)
+	req = req.WithContext(context.WithValue(req.Context(), testCtxKey, "foo"))
+
+	resp, err := http.DefaultClient.Do(req)
 	assert.Nil(t, err)
 	body, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()

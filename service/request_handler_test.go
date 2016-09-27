@@ -4,7 +4,8 @@ import (
 	"crypto/tls"
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/plugin"
-	"golang.org/x/net/context"
+
+	"context"
 	"net/http"
 	"testing"
 )
