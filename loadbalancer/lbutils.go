@@ -1,7 +1,6 @@
 package loadbalancer
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -116,7 +115,7 @@ func NewBackendLoadBalancer(backendName string) (*BackendLoadBalancer, error) {
 	}, err
 }
 
-func (lb *BackendLoadBalancer) DoWithLoadBalancer(ctx context.Context, req *http.Request, useTLS bool) (*http.Response, error) {
+func (lb *BackendLoadBalancer) DoWithLoadBalancer(req *http.Request, useTLS bool) (*http.Response, error) {
 	connectString, err := lb.LoadBalancer.GetConnectAddress()
 	if err != nil {
 		return nil, err
@@ -142,5 +141,5 @@ func (lb *BackendLoadBalancer) DoWithLoadBalancer(ctx context.Context, req *http
 	}
 
 	req.RequestURI = "" //Must clear when using http.Client
-	return ctxhttp.Do(ctx, client, req)
+	return ctxhttp.Do(req.Context(), client, req)
 }

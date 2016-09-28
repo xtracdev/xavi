@@ -1,7 +1,6 @@
 package loadbalancer
 
 import (
-	"context"
 	"github.com/stretchr/testify/assert"
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
@@ -147,7 +146,7 @@ func TestLBUtilsCallSvc(t *testing.T) {
 	assert.Nil(t, err)
 
 	//Call 1
-	resp, err := lb.DoWithLoadBalancer(context.Background(), req, false)
+	resp, err := lb.DoWithLoadBalancer(req, false)
 	if assert.Nil(t, err) {
 		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
@@ -156,7 +155,7 @@ func TestLBUtilsCallSvc(t *testing.T) {
 	}
 
 	//Call 2
-	resp, err = lb.DoWithLoadBalancer(context.Background(), req, false)
+	resp, err = lb.DoWithLoadBalancer(req, false)
 	if assert.Nil(t, err) {
 		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
