@@ -10,15 +10,16 @@ import (
 	"context"
 	"expvar"
 	"fmt"
-	"github.com/armon/go-metrics"
-	"github.com/xtracdev/xavi/plugin"
-	_ "github.com/xtracdev/xavi/statsd"
-	"github.com/xtracdev/xavi/timer"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/armon/go-metrics"
+	"github.com/xtracdev/xavi/plugin"
+	_ "github.com/xtracdev/xavi/statsd"
+	"github.com/xtracdev/xavi/timer"
 )
 
 type key int
@@ -31,6 +32,12 @@ var counts = expvar.NewMap("counters")
 //NewContextWithTimer adds a new timer to the request context
 func NewContextWithTimer(ctx context.Context) context.Context {
 	timer := timer.NewEndToEndTimer("unspecified timer")
+	return context.WithValue(ctx, timerKey, timer)
+}
+
+//NewContextWithNamedTimer adds a new timer to the request context
+func NewContextWithNamedTimer(ctx context.Context, name string) context.Context {
+	timer := timer.NewEndToEndTimer(name)
 	return context.WithValue(ctx, timerKey, timer)
 }
 
@@ -62,17 +69,33 @@ func TimerFromContext(ctx context.Context) *timer.EndToEndTimer {
 	return newCtx
 }
 
-type TimingWrapper struct{}
+type TimingWrapper struct {
+	timerName string
+}
 
+//NewTimingWrapper returns a Wrapper that will trace the round trip time of the request.
+//It is possible to specify the initial name of the timer passing a string to this function.
 func NewTimingWrapper(args ...interface{}) plugin.Wrapper {
-	return TimingWrapper{}
+	tw := TimingWrapper{}
+	if len(args) > 0 {
+		name, ok := args[0].(string)
+		if ok {
+			tw.timerName = strings.TrimSpace(name)
+		}
+	}
+	return tw
 }
 
 //Wrap implements the plugin Wrapper interface, and is used
 //to wrap a handler to put a EndToEndTimer instance into the call context
 func (tw TimingWrapper) Wrap(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		ctx := NewContextWithTimer(req.Context())
+		var ctx context.Context
+		if tw.timerName != "" {
+			ctx = NewContextWithNamedTimer(req.Context(), tw.timerName)
+		} else {
+			ctx = NewContextWithTimer(req.Context())
+		}
 		newR := req.WithContext(ctx)
 		h.ServeHTTP(rw, newR)
 		ctxTimer := TimerFromContext(newR.Context())

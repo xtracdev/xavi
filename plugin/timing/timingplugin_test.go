@@ -3,13 +3,16 @@ package timing
 import (
 	"bytes"
 	"context"
-	"github.com/stretchr/testify/assert"
-	"github.com/xtracdev/xavi/plugin/logging"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/xtracdev/xavi/plugin"
+	"github.com/xtracdev/xavi/plugin/logging"
 )
 
 func handleBar(rw http.ResponseWriter, req *http.Request) {
@@ -21,7 +24,7 @@ func handleBar(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	rw.WriteHeader(200)
-	rw.Write([]byte("foo"))
+	rw.Write([]byte(fmt.Sprintf("%s", timerCtx.Name)))
 }
 
 func TestServiceNameContextPresent(t *testing.T) {
@@ -38,29 +41,58 @@ func TestServiceNameContextNotPresent(t *testing.T) {
 func TestContextPresent(t *testing.T) {
 	wrapperFactory := logging.NewLoggingWrapper()
 	assert.NotNil(t, wrapperFactory)
-	handler := wrapperFactory.Wrap(http.HandlerFunc(handleBar))
 
-	timerWrapper := NewTimingWrapper()
-
-	handler = timerWrapper.Wrap(handler)
-
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-
-	res, err := http.Post(ts.URL, "application/json", bytes.NewBuffer([]byte("Some stuff")))
-	if !assert.NoError(t, err) {
-		t.Log(err)
-		t.Fail()
-		return
+	testcases := []struct {
+		tw      plugin.Wrapper
+		expName string
+	}{
+		{
+			tw:      NewTimingWrapper(),
+			expName: "unspecified timer",
+		},
+		{
+			tw:      NewTimingWrapper("test"),
+			expName: "test",
+		},
+		{
+			tw:      NewTimingWrapper("  "),
+			expName: "unspecified timer",
+		},
+		{
+			tw:      NewTimingWrapper(&[]string{""}),
+			expName: "unspecified timer",
+		},
+		{
+			tw:      NewTimingWrapper(" test trim   "),
+			expName: "test trim",
+		},
 	}
 
-	resBytes, err := ioutil.ReadAll(res.Body)
-	assert.NoError(t, err)
-	res.Body.Close()
+	for _, tc := range testcases {
+		handler := wrapperFactory.Wrap(http.HandlerFunc(handleBar))
 
-	assert.Equal(t, "foo", string(resBytes))
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+		timerWrapper := tc.tw
 
-	//Delay to see the log output and to pick it up for test coverage
-	time.Sleep(1 * time.Second)
+		handler = timerWrapper.Wrap(handler)
+
+		ts := httptest.NewServer(handler)
+		defer ts.Close()
+
+		res, err := http.Post(ts.URL, "application/json", bytes.NewBuffer([]byte("Some stuff")))
+		if !assert.NoError(t, err) {
+			t.Log(err)
+			t.Fail()
+			return
+		}
+
+		resBytes, err := ioutil.ReadAll(res.Body)
+		assert.NoError(t, err)
+		res.Body.Close()
+
+		assert.Equal(t, tc.expName, string(resBytes))
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		//Delay to see the log output and to pick it up for test coverage
+		time.Sleep(1 * time.Second)
+	}
 }
