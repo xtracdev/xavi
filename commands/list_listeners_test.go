@@ -23,7 +23,7 @@ func testMakeListListeners(faultyStore bool, withListener bool) (*bytes.Buffer, 
 	}
 
 	if withListener {
-		b := &config.ListenerConfig{"l1", []string{"r1", "r2", "r3"}}
+		b := &config.ListenerConfig{"l1", []string{"r1", "r2", "r3"}, true}
 		b.Store(kvs)
 	}
 

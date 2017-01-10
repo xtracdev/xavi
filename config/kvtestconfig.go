@@ -19,7 +19,7 @@ func BuildKVStoreTestConfig(t *testing.T) kvstore.KVStore {
 }
 
 func loadTestConfig1(kvs kvstore.KVStore, t *testing.T) {
-	ln := &ListenerConfig{"listener", []string{"route1"}}
+	ln := &ListenerConfig{"listener", []string{"route1"}, true}
 	err := ln.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +60,7 @@ func loadTestConfig1(kvs kvstore.KVStore, t *testing.T) {
 }
 
 func loadConfigTwoBackendsNoPluginNameSpecified(kvs kvstore.KVStore, t *testing.T) {
-	ln := &ListenerConfig{"l1", []string{"r1"}}
+	ln := &ListenerConfig{"l1", []string{"r1"}, true}
 	err := ln.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
@@ -111,7 +111,7 @@ func loadConfigTwoBackendsNoPluginNameSpecified(kvs kvstore.KVStore, t *testing.
 
 func loadMultiRoute(kvs kvstore.KVStore, t *testing.T) {
 	plugin.RegisterWrapperFactory("Logging", logging.NewLoggingWrapper)
-	ln := &ListenerConfig{"l2", []string{"r2"}}
+	ln := &ListenerConfig{"l2", []string{"r2"}, true}
 	err := ln.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
@@ -133,7 +133,7 @@ func loadMultiRoute(kvs kvstore.KVStore, t *testing.T) {
 
 func loadRouteWithNoBackends(kvs kvstore.KVStore, t *testing.T) {
 	plugin.RegisterWrapperFactory("Logging", logging.NewLoggingWrapper)
-	ln := &ListenerConfig{"l2", []string{"r2"}}
+	ln := &ListenerConfig{"l2", []string{"r2"}, true}
 	err := ln.Store(kvs)
 	if err != nil {
 		t.Fatal(err)

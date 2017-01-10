@@ -37,19 +37,39 @@ func TestAddListenerMissingAllArgs(t *testing.T) {
 }
 
 func TestAddListener(t *testing.T) {
-	_, addListener := testMakeAddListener(false)
-	args := []string{"-name", "test", "-routes", "foo,bar"}
-	status := addListener.Run(args)
-	assert.Equal(t, 0, status)
+	t.Run("By default health endpoint is enabled", func(t *testing.T) {
+		_, addListener := testMakeAddListener(false)
+		args := []string{"-name", "test", "-routes", "foo,bar"}
+		status := addListener.Run(args)
+		assert.Equal(t, 0, status)
 
-	storedBytes, err := addListener.KVStore.Get("listeners/test")
-	assert.Nil(t, err)
+		storedBytes, err := addListener.KVStore.Get("listeners/test")
+		assert.Nil(t, err)
 
-	b := config.JSONToListener(storedBytes)
-	assert.Equal(t, "test", b.Name)
-	assert.True(t, len(b.RouteNames) == 2)
-	assert.Equal(t, "foo", b.RouteNames[0])
-	assert.Equal(t, "bar", b.RouteNames[1])
+		b := config.JSONToListener(storedBytes)
+		assert.Equal(t, "test", b.Name)
+		assert.True(t, len(b.RouteNames) == 2)
+		assert.Equal(t, "foo", b.RouteNames[0])
+		assert.Equal(t, "bar", b.RouteNames[1])
+		assert.True(t, b.HealthEndpoint)
+	})
+
+	t.Run("Health endpoint is disabled", func(t *testing.T) {
+		_, addListener := testMakeAddListener(false)
+		args := []string{"-name", "test", "-routes", "foo,bar", "-healthEndpoint=false"}
+		status := addListener.Run(args)
+		assert.Equal(t, 0, status)
+
+		storedBytes, err := addListener.KVStore.Get("listeners/test")
+		assert.Nil(t, err)
+
+		b := config.JSONToListener(storedBytes)
+		assert.Equal(t, "test", b.Name)
+		assert.True(t, len(b.RouteNames) == 2)
+		assert.Equal(t, "foo", b.RouteNames[0])
+		assert.Equal(t, "bar", b.RouteNames[1])
+		assert.False(t, b.HealthEndpoint)
+	})
 }
 
 func TestAddListenerParseArgsError(t *testing.T) {

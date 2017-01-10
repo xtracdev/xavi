@@ -133,7 +133,7 @@ func TestListenerGet(t *testing.T) {
 	res.Body.Close()
 	assert.Nil(t, err)
 
-	expected := `{"Name":"test-listener","RouteNames":["demo-route"]}`
+	expected := `{"Name":"test-listener","RouteNames":["demo-route"],"HealthEndpoint":true}`
 
 	responseString := string(rs)
 	assert.Equal(t, expected, responseString)
@@ -182,7 +182,7 @@ func TestListenerGetList(t *testing.T) {
 	res.Body.Close()
 	assert.Nil(t, err)
 
-	expected := `[{"Name":"test-listener","RouteNames":["demo-route"]}]`
+	expected := `[{"Name":"test-listener","RouteNames":["demo-route"],"HealthEndpoint":true}]`
 
 	responseString := string(rs)
 	assert.Equal(t, expected, responseString)

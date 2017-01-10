@@ -93,8 +93,15 @@ func (l *Listen) Run(args []string) int {
 		l.UI.Error(err.Error())
 		return 1
 	}
-
 	l.UI.Info(fmt.Sprintf("***Service:\n%s", s))
+
+	//Build health check context for the named listerner
+	hcc, err := service.BuildHealthContextForListener(listener, l.KVStore)
+	if err != nil {
+		l.UI.Error(err.Error())
+		return 1
+	}
+	service.RecordActiveHealthCheckContext(hcc)
 
 	exitChannel := make(chan int)
 	signalChannel := make(chan os.Signal, 1)

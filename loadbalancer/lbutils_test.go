@@ -56,7 +56,7 @@ func buildTestConfigForLBCall(t *testing.T, server1Url, server2Url string) kvsto
 	kvs, _ := kvstore.NewHashKVStore("")
 
 	//Define listener
-	ln := &config.ListenerConfig{"lbclistener", []string{"lbcroute1"}}
+	ln := &config.ListenerConfig{"lbclistener", []string{"lbcroute1"}, true}
 	err := ln.Store(kvs)
 	if err != nil {
 		t.Fatal(err)
