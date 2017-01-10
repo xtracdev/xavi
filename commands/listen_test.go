@@ -21,7 +21,7 @@ func testMakeListenCmd(faultyStore bool, withListener bool) (*bytes.Buffer, *Lis
 	}
 
 	if withListener {
-		b := &config.ListenerConfig{"l1", []string{}}
+		b := &config.ListenerConfig{"l1", []string{}, true}
 		b.Store(kvs)
 	}
 

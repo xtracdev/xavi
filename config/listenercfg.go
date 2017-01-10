@@ -9,8 +9,9 @@ import (
 
 //ListenerConfig represents a listener configuration definition
 type ListenerConfig struct {
-	Name       string
-	RouteNames []string
+	Name           string
+	RouteNames     []string
+	HealthEndpoint bool
 }
 
 //JSONToListener unmarshals the JSON representation of a listener definition

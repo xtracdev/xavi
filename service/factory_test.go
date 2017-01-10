@@ -20,7 +20,7 @@ func initKVStore(t *testing.T) kvstore.KVStore {
 	return config.BuildKVStoreTestConfig(t)
 }
 
-func TestServerFactory(t *testing.T) {
+func TestServerAndHealthContextFactory(t *testing.T) {
 	plugin.RegisterWrapperFactory("Logging", logging.NewLoggingWrapper)
 
 	var testKVS = initKVStore(t)
@@ -33,10 +33,12 @@ func TestServerFactory(t *testing.T) {
 	assert.True(t, strings.Contains(s, "listener"))
 	assert.True(t, strings.Contains(s, "0.0.0.0:8000"))
 
-	ms, ok := service.(*managedService)
-	assert.True(t, ok)
-	hch := ms.HealthCheckContext.HealthHandler()
+	hcc, err := BuildHealthContextForListener("listener", testKVS)
+	assert.Nil(t, err)
+
+	hch := hcc.HealthHandler()
 	assert.NotNil(t, hch)
+	assert.True(t, hcc.EnableHealthEndpoint)
 
 	ts := httptest.NewServer(hch)
 	defer ts.Close()
@@ -66,13 +68,13 @@ func TestServerFactory(t *testing.T) {
 
 func TestHealthCheckMultiBackendRoute(t *testing.T) {
 	var testKVS = initKVStore(t)
-	service, err := BuildServiceForListener("l2", "0.0.0.0:8000", testKVS)
+
+	hcc, err := BuildHealthContextForListener("l2", testKVS)
 	assert.Nil(t, err)
 
-	ms, ok := service.(*managedService)
-	assert.True(t, ok)
-	hch := ms.HealthCheckContext.HealthHandler()
+	hch := hcc.HealthHandler()
 	assert.NotNil(t, hch)
+	assert.True(t, hcc.EnableHealthEndpoint)
 
 	ts := httptest.NewServer(hch)
 	defer ts.Close()

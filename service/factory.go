@@ -21,7 +21,10 @@ func readListenerConfig(name string, kvs kvstore.KVStore) (lc *config.ListenerCo
 //BuildServiceForListener builds a runnable service based on the given name, retrieving
 //definitions using the supplied KVStore and listening on the supplied address.
 func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (Service, error) {
-	var managedService = newManagedService()
+	var managedService = &managedService{
+		ListenerName: name,
+		Address:      address,
+	}
 
 	log.Info("Building service for listener " + name)
 	listenerConfig, err := readListenerConfig(name, kvs)
@@ -30,9 +33,6 @@ func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (
 		return nil, err
 	}
 
-	managedService.ListenerName = name
-	managedService.HealthCheckContext.ListenerName = name
-	managedService.Address = address
 	log.Info("reading routes...")
 	for _, routeName := range listenerConfig.RouteNames {
 		log.Info("route " + routeName + "...")
@@ -47,4 +47,32 @@ func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (
 	}
 
 	return managedService, nil
+}
+
+func BuildHealthContextForListener(name string, kvs kvstore.KVStore) (*HealthCheckContext, error) {
+	log.Info("Building health check context for listener " + name)
+
+	hcc := &HealthCheckContext{
+		ListenerName:         name,
+		EnableHealthEndpoint: true,
+	}
+
+	listenerConfig, err := readListenerConfig(name, kvs)
+	if err != nil {
+		log.Info("Listener definition not found")
+		return nil, err
+	}
+
+	hcc.EnableHealthEndpoint = listenerConfig.HealthEndpoint
+	log.Info("reading routes...")
+	for _, routeName := range listenerConfig.RouteNames {
+		log.Info("route " + routeName + "...")
+		route, err := buildRoute(routeName, kvs)
+		if err != nil {
+			return nil, err
+		}
+		hcc.AddRouteContext(route)
+	}
+
+	return hcc, nil
 }

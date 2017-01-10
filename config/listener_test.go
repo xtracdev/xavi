@@ -10,7 +10,7 @@ import (
 func TestJSON2Listener(t *testing.T) {
 	listenerDef := `
 		{
-			"name":"l1", "routeNames":["route1","route2"]
+			"name":"l1", "routeNames":["route1","route2"], "healthEndpoint":false
 		}
 	`
 	var l ListenerConfig
@@ -25,6 +25,7 @@ func testVerifyListenerRead(ln *ListenerConfig, t *testing.T) {
 	assert.Equal(t, 2, len(ln.RouteNames))
 	assert.Equal(t, "route1", ln.RouteNames[0])
 	assert.Equal(t, "route2", ln.RouteNames[1])
+	assert.False(t, ln.HealthEndpoint)
 }
 
 func TestListenerStoreAndRetrieve(t *testing.T) {
@@ -41,7 +42,7 @@ func TestListenerStoreAndRetrieve(t *testing.T) {
 	assert.Nil(t, listeners)
 
 	//Store
-	ln = &ListenerConfig{"l1", []string{"route1", "route2"}}
+	ln = &ListenerConfig{"l1", []string{"route1", "route2"}, false}
 	err = ln.Store(testKVS)
 	assert.Nil(t, err)
 

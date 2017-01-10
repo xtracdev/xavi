@@ -50,7 +50,9 @@ func (ListenerDef) PutDefinition(kvs kvstore.KVStore, resp http.ResponseWriter, 
 		return nil, errServiceResourceMissing
 	}
 
-	listenerConfig := new(config.ListenerConfig)
+	listenerConfig := &config.ListenerConfig{
+		HealthEndpoint: true,
+	}
 	err = json.Unmarshal(body, listenerConfig)
 	if err != nil {
 		log.Warn("Error unmarshaling request body")
