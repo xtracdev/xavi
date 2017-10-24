@@ -110,7 +110,7 @@ func makeCertPool(caCertPath string) *x509.CertPool {
 }
 
 func makeTransportForHealthCheck(https bool, caCertPath string) *http.Transport {
-	defaultTransport := &http.Transport{DisableKeepAlives: false, DisableCompression: false}
+	defaultTransport := &http.Transport{DisableKeepAlives: false, DisableCompression: false, Proxy: http.ProxyFromEnvironment}
 	//Non-https case
 	if https == false {
 		return defaultTransport
@@ -130,7 +130,7 @@ func makeTransportForHealthCheck(https bool, caCertPath string) *http.Transport 
 
 	log.Info("using custom transport for health check")
 	tlsConfig := &tls.Config{RootCAs: pool}
-	return &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig}
+	return &http.Transport{DisableKeepAlives: false, DisableCompression: false, Proxy: http.ProxyFromEnvironment, TLSClientConfig: tlsConfig}
 
 }
 
