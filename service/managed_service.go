@@ -60,8 +60,8 @@ func makeGHEntryForSingleBackendRoute(r route) guardAndHandler {
 	tlsConfig := &tls.Config{RootCAs: r.Backends[0].CACert}
 
 	requestHandler := &requestHandler{
-		Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-		TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig},
+		Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false, Proxy: http.ProxyFromEnvironment},
+		TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, Proxy: http.ProxyFromEnvironment, TLSClientConfig: tlsConfig},
 		Backend:      r.Backends[0],
 	}
 
@@ -96,8 +96,8 @@ func makeGHEntryForMultipleBackends(r route) guardAndHandler {
 
 		tlsConfig := &tls.Config{RootCAs: backend.CACert}
 		requestHandler := &requestHandler{
-			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false},
-			TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, TLSClientConfig: tlsConfig},
+			Transport:    &http.Transport{DisableKeepAlives: false, DisableCompression: false, Proxy: http.ProxyFromEnvironment},
+			TLSTransport: &http.Transport{DisableKeepAlives: false, DisableCompression: false, Proxy: http.ProxyFromEnvironment, TLSClientConfig: tlsConfig},
 			Backend:      backend,
 		}
 

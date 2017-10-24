@@ -17,6 +17,7 @@ import (
 	"github.com/xtracdev/xavi/config"
 	"github.com/xtracdev/xavi/kvstore"
 	"io/ioutil"
+	"os"
 )
 
 var standardTransport = &http.Transport{DisableKeepAlives: false, DisableCompression: false}
@@ -291,4 +292,82 @@ func TestHCMakeHealthCheckTimeout(t *testing.T) {
 	wg.Wait()
 	assert.True(t, called)
 
+}
+
+func TestMakeTransportForHealthCheckNoProxySet(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	req, err := http.NewRequest(http.MethodGet, "https://www.test.com", nil)
+	assert.Nil(t, err)
+
+	transport := makeTransportForHealthCheck(false, "cert")
+	proxy, err := transport.Proxy(req)
+	assert.Nil(t, err)
+	assert.Nil(t, proxy)
+}
+
+func TestMakeTransportForHealthCheckProxyIgnored(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	os.Setenv("HTTPS_PROXY", "https://proxy.com")
+	os.Setenv("no_proxy", "test.com")
+
+	req, err := http.NewRequest(http.MethodGet, "https://test.com", nil)
+	assert.Nil(t, err)
+
+	transport := makeTransportForHealthCheck(false, "cert")
+	proxy, err := transport.Proxy(req)
+	assert.Nil(t, err)
+	assert.Nil(t, proxy)
+}
+
+func TestMakeTransportForHealthCheckProxyUsed(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	os.Setenv("http_proxy", "http://proxy.com")
+	os.Setenv("no_proxy", "other.com")
+
+	req, err := http.NewRequest(http.MethodGet, "http://www.test.com", nil)
+	assert.Nil(t, err)
+
+	transport := makeTransportForHealthCheck(false, "cert")
+	proxy, err := transport.Proxy(req)
+	assert.Nil(t, err)
+	assert.Equal(t, "proxy.com", proxy.Host)
 }

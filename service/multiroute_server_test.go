@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -136,4 +137,194 @@ func mrtBuildListener(urlA string, urlB string) *managedService {
 
 	return &ms
 
+}
+
+func TestMakeGHEntryForSingleBackendRouteProxy(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("PROXY REACHED"))
+	}))
+	defer proxyServer.Close()
+
+	os.Setenv("http_proxy", proxyServer.URL)
+
+	server := makeServerConfig("EndpointServer", "http://www.backend.com")
+	backEnd := makeBackend(backendA, server)
+	testRoute := route{
+		Name:     "route1",
+		Backends: []*backend{backEnd},
+	}
+
+	guardAndHandler := makeGHEntryForSingleBackendRoute(testRoute)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "http://www.input.com", nil)
+	assert.Nil(t, err)
+
+	guardAndHandler.HandlerFn.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusTeapot, w.Code)
+	assert.Equal(t, "PROXY REACHED", w.Body.String())
+}
+
+func TestMakeGHEntryForSingleBackendRouteNoProxy(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	server := makeServerConfig("EndpointServer", "http://www.backend.com")
+	backEnd := makeBackend(backendA, server)
+	testRoute := route{
+		Name:     "route1",
+		Backends: []*backend{backEnd},
+	}
+
+	guardAndHandler := makeGHEntryForSingleBackendRoute(testRoute)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "http://www.input.com", nil)
+	assert.Nil(t, err)
+
+	guardAndHandler.HandlerFn.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+}
+
+func TestMakeGHEntryForMultipleBackendsProxy(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("PROXY REACHED"))
+	}))
+	defer proxyServer.Close()
+
+	os.Setenv("http_proxy", proxyServer.URL)
+
+	var bHandler plugin.MultiBackendHandlerFunc = func(bhMap plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, 2, len(bhMap))
+
+		for _, backendHandler := range bhMap {
+			w := httptest.NewRecorder()
+			backendHandler.ServeHTTP(w, r)
+			assert.Equal(t, http.StatusTeapot, w.Code)
+			assert.Equal(t, "PROXY REACHED", w.Body.String())
+		}
+
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	var BMBAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiBackendAdapter {
+		return &plugin.MultiBackendAdapter{
+			BackendHandlerCtx: bhMap,
+			Handler:           bHandler,
+		}
+	}
+
+	plugin.RegisterMultiBackendAdapterFactory(multiBackendAdapterFactory, BMBAFactory)
+	serverA := makeServerConfig("EndpointServer1", "http://www.backendA.com")
+	backEndA := makeBackend(backendA, serverA)
+	serverB := makeServerConfig("EndpointServer2", "http://www.backendB.com")
+	backEndB := makeBackend(backendB, serverB)
+	testRoute := route{
+		Name:                   "route1",
+		Backends:               []*backend{backEndA, backEndB},
+		MultiBackendPluginName: multiBackendAdapterFactory,
+	}
+
+	guardAndHandler := makeGHEntryForMultipleBackends(testRoute)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "http://www.input.com", nil)
+	assert.Nil(t, err)
+
+	guardAndHandler.HandlerFn.ServeHTTP(w, req)
+}
+
+func TestMakeGHEntryForMultipleBackendsNoProxy(t *testing.T) {
+	defer os.Setenv("http_proxy", os.Getenv("http_proxy"))
+	defer os.Setenv("https_proxy", os.Getenv("https_proxy"))
+	defer os.Setenv("no_proxy", os.Getenv("no_proxy"))
+	defer os.Setenv("HTTP_PROXY", os.Getenv("HTTP_PROXY"))
+	defer os.Setenv("HTTPS_PROXY", os.Getenv("HTTPS_PROXY"))
+	defer os.Setenv("NO_PROXY", os.Getenv("NO_PROXY"))
+
+	os.Unsetenv("http_proxy")
+	os.Unsetenv("https_proxy")
+	os.Unsetenv("no_proxy")
+	os.Unsetenv("HTTP_PROXY")
+	os.Unsetenv("HTTPS_PROXY")
+	os.Unsetenv("NO_PROXY")
+
+	var bHandler plugin.MultiBackendHandlerFunc = func(bhMap plugin.BackendHandlerMap, w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, 2, len(bhMap))
+
+		for _, backendHandler := range bhMap {
+			w := httptest.NewRecorder()
+			backendHandler.ServeHTTP(w, r)
+			assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+		}
+
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	var BMBAFactory = func(bhMap plugin.BackendHandlerMap) *plugin.MultiBackendAdapter {
+		return &plugin.MultiBackendAdapter{
+			BackendHandlerCtx: bhMap,
+			Handler:           bHandler,
+		}
+	}
+
+	plugin.RegisterMultiBackendAdapterFactory(multiBackendAdapterFactory, BMBAFactory)
+	serverA := makeServerConfig("EndpointServer1", "http://www.backendA.com")
+	backEndA := makeBackend(backendA, serverA)
+	serverB := makeServerConfig("EndpointServer2", "http://www.backendB.com")
+	backEndB := makeBackend(backendB, serverB)
+	testRoute := route{
+		Name:                   "route1",
+		Backends:               []*backend{backEndA, backEndB},
+		MultiBackendPluginName: multiBackendAdapterFactory,
+	}
+
+	guardAndHandler := makeGHEntryForMultipleBackends(testRoute)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "http://www.input.com", nil)
+	assert.Nil(t, err)
+
+	guardAndHandler.HandlerFn.ServeHTTP(w, req)
 }
