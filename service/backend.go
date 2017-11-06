@@ -47,7 +47,7 @@ func buildBackends(kvs kvstore.KVStore, names []string) ([]*backend, error) {
 func buildBackend(kvs kvstore.KVStore, name string) (*backend, error) {
 	var b backend
 
-	log.Info("Building backend " + name)
+	log.Debugf("Building backend: %s", name)
 	backendConfig, err := config.ReadBackendConfig(name, kvs)
 	if err != nil {
 		return nil, err

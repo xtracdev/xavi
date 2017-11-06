@@ -144,7 +144,7 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 		url = fmt.Sprintf("http://%s:%d%s", serverConfig.Address, serverConfig.Port, serverConfig.PingURI)
 	}
 
-	log.Info("Setting healthcheck url to ", url)
+	log.Debug("Setting healthcheck url to ", url)
 	healthCheckInterval := time.Duration(serverConfig.HealthCheckInterval) * time.Millisecond
 
 	return func() {
@@ -154,11 +154,15 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 			select {
 			case healthStatus := <-hcfn(url, transport):
 				if !healthStatus {
-					log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
-					lbEndpoint.MarkLoadBalancerEndpointUp(false)
+					if lbEndpoint.IsUp() {
+						log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
+						lbEndpoint.MarkLoadBalancerEndpointUp(false)
+					}
 				} else {
-					log.Debug("Endpoint is up: ", serverConfig.Address, ":", serverConfig.Port)
-					lbEndpoint.MarkLoadBalancerEndpointUp(true)
+					if !lbEndpoint.IsUp() {
+						log.Debug("Endpoint is up: ", serverConfig.Address, ":", serverConfig.Port)
+						lbEndpoint.MarkLoadBalancerEndpointUp(true)
+					}
 				}
 
 			case <-time.After(time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond):
@@ -179,7 +183,7 @@ func noop() {}
 //loop arguement is meant to enable testability - normal health check functions run until the listener is shutdown,
 //unit test health checks run once typically.
 func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
-	log.Infof("Making health check for %s", serverConfig.Name)
+	log.Debugf("Making health check for %s", serverConfig.Name)
 	switch serverConfig.HealthCheck {
 	default:
 		log.Debug("returning no-op health check")
@@ -201,22 +205,20 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 		return httpGet(lbEndpoint, serverConfig, loop, true,
 			createHealthCheckFnWithTimeout(healthCheckTimeout))
 	case "custom-http":
-		log.Info("return custom health check")
+		log.Debug("returning custom http-get health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
 		if hcfn == nil {
 			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
 				serverConfig.Name)
 		}
-		log.Infof("Returning httpGet for %s", serverConfig.Name)
 		return httpGet(lbEndpoint, serverConfig, loop, false, hcfn)
 	case "custom-https":
-		log.Info("return custom health check")
+		log.Debug("returning custom https-get health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
 		if hcfn == nil {
 			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
 				serverConfig.Name)
 		}
-		log.Infof("Returning httpGet for %s indicating https transport", serverConfig.Name)
 		return httpGet(lbEndpoint, serverConfig, loop, true, hcfn)
 	}
 }

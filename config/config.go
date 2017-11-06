@@ -11,7 +11,7 @@ var (
 )
 
 func readKey(key string, kvs kvstore.KVStore) ([]byte, error) {
-	log.Info("Read key " + key)
+	log.Debug("Read key " + key)
 	return kvs.Get(key)
 }
 

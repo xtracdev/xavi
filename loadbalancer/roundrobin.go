@@ -50,11 +50,11 @@ func (rrf *RoundRobinLoadBalancerFactory) NewLoadBalancer(backendName, caCertPat
 		lbEndpoint.Up = true
 		lbEndpoint.CACertPath = caCertPath
 
-		log.Info("Spawing health check for address ", lbEndpoint.Address)
+		log.Debug("Spawing health check for address ", lbEndpoint.Address)
 		healthCheckFunction := MakeHealthCheck(lbEndpoint, s, true)
 		go healthCheckFunction()
 
-		log.Info("Adding server with address ", lbEndpoint.Address)
+		log.Debug("Adding server with address ", lbEndpoint.Address)
 		rrlb.servers.Value = lbEndpoint
 		rrlb.servers = rrlb.servers.Next()
 	}

@@ -35,7 +35,7 @@ func (ar *AddRoute) Help() string {
 
 func (ar *AddRoute) validateBackend(name string) (bool, error) {
 	key := "backends/" + name
-	log.Info("Read key " + key)
+	log.Debug("Read key " + key)
 	backend, err := ar.KVStore.Get(key)
 	if err != nil {
 		return false, err

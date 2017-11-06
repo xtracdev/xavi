@@ -40,7 +40,7 @@ func (ps *PingServer) Run(args []string) int {
 
 	//Read the definition from the key store
 	key := "servers/" + args[0]
-	log.Info("Read key " + key)
+	log.Debug("Read key " + key)
 	bv, err := ps.KVStore.Get(key)
 	if err != nil {
 		ps.UI.Error("Error reading key: " + err.Error())
