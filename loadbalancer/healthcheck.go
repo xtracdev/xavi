@@ -201,22 +201,20 @@ func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.Serve
 		return httpGet(lbEndpoint, serverConfig, loop, true,
 			createHealthCheckFnWithTimeout(healthCheckTimeout))
 	case "custom-http":
-		log.Info("return custom health check")
+		log.Debug("returning custom http-get health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
 		if hcfn == nil {
 			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
 				serverConfig.Name)
 		}
-		log.Infof("Returning httpGet for %s", serverConfig.Name)
 		return httpGet(lbEndpoint, serverConfig, loop, false, hcfn)
 	case "custom-https":
-		log.Info("return custom health check")
+		log.Debug("returning custom https-get health check")
 		hcfn := config.HealthCheckForServer(serverConfig.Name)
 		if hcfn == nil {
 			log.Fatalf("No custom health check registered for %s - add code to register healthcheck or change config",
 				serverConfig.Name)
 		}
-		log.Infof("Returning httpGet for %s indicating https transport", serverConfig.Name)
 		return httpGet(lbEndpoint, serverConfig, loop, true, hcfn)
 	}
 }
