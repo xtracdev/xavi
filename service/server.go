@@ -9,7 +9,7 @@ import (
 
 func buildServer(name string, kvs kvstore.KVStore) (*config.ServerConfig, error) {
 
-	log.Info("Building server " + name)
+	log.Debug("Building server " + name)
 	serverConfig, err := config.ReadServerConfig(name, kvs)
 	if err != nil {
 		return nil, err

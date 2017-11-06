@@ -179,7 +179,7 @@ func noop() {}
 //loop arguement is meant to enable testability - normal health check functions run until the listener is shutdown,
 //unit test health checks run once typically.
 func MakeHealthCheck(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig, loop bool) func() {
-	log.Infof("Making health check for %s", serverConfig.Name)
+	log.Debugf("Making health check for %s", serverConfig.Name)
 	switch serverConfig.HealthCheck {
 	default:
 		log.Debug("returning no-op health check")

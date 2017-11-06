@@ -33,7 +33,7 @@ func BuildServiceForListener(name string, address string, kvs kvstore.KVStore) (
 		return nil, err
 	}
 
-	log.Info("reading routes...")
+	log.Debug("reading routes...")
 	for _, routeName := range listenerConfig.RouteNames {
 		log.Info("route " + routeName + "...")
 		route, err := buildRoute(routeName, kvs)
@@ -64,9 +64,9 @@ func BuildHealthContextForListener(name string, kvs kvstore.KVStore) (*HealthChe
 	}
 
 	hcc.EnableHealthEndpoint = listenerConfig.HealthEndpoint
-	log.Info("reading routes...")
+	log.Debug("reading routes...")
 	for _, routeName := range listenerConfig.RouteNames {
-		log.Info("route " + routeName + "...")
+		log.Debug("route " + routeName + "...")
 		route, err := buildRoute(routeName, kvs)
 		if err != nil {
 			return nil, err
