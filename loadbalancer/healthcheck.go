@@ -144,7 +144,7 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 		url = fmt.Sprintf("http://%s:%d%s", serverConfig.Address, serverConfig.Port, serverConfig.PingURI)
 	}
 
-	log.Info("Setting healthcheck url to ", url)
+	log.Debug("Setting healthcheck url to ", url)
 	healthCheckInterval := time.Duration(serverConfig.HealthCheckInterval) * time.Millisecond
 
 	return func() {
