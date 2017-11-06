@@ -154,11 +154,15 @@ func httpGet(lbEndpoint *LoadBalancerEndpoint, serverConfig config.ServerConfig,
 			select {
 			case healthStatus := <-hcfn(url, transport):
 				if !healthStatus {
-					log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
-					lbEndpoint.MarkLoadBalancerEndpointUp(false)
+					if lbEndpoint.IsUp() {
+						log.Warn("Endpoint ", serverConfig.Address, ":", serverConfig.Port, " is not healthy")
+						lbEndpoint.MarkLoadBalancerEndpointUp(false)
+					}
 				} else {
-					log.Debug("Endpoint is up: ", serverConfig.Address, ":", serverConfig.Port)
-					lbEndpoint.MarkLoadBalancerEndpointUp(true)
+					if !lbEndpoint.IsUp() {
+						log.Debug("Endpoint is up: ", serverConfig.Address, ":", serverConfig.Port)
+						lbEndpoint.MarkLoadBalancerEndpointUp(true)
+					}
 				}
 
 			case <-time.After(time.Duration(serverConfig.HealthCheckTimeout) * time.Millisecond):
