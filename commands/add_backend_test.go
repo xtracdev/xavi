@@ -141,8 +141,10 @@ func TestSpecifyTLSOnlyWithoutCACert(t *testing.T) {
 	writer, addBackend := testMakeAddBackend(false)
 	args := []string{"-name", "test", "-servers", "foo", "-tls-only=true"}
 	status := addBackend.Run(args)
-	assert.Equal(t, 1, status)
-	assert.True(t, strings.Contains(writer.String(), ErrMustSupplyCACert.Error()))
+	assert.Equal(t, 0, status)
+	if status != 0 {
+		t.Log(writer.String())
+	}
 }
 
 func TestSpecifyTLSOnlyCACertOk(t *testing.T) {
