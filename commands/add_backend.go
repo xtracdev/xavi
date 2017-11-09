@@ -24,9 +24,6 @@ type AddBackend struct {
 //we load the file, check its format and content, and so on.
 var ErrBadPathSpec = errors.New("CA certificate path is invalid or inaccessible")
 
-//ErrMustSupplyCACert indicates a CA Cert Path must be suppied if tlsonly is indicated
-var ErrMustSupplyCACert = errors.New("CA certificate path must be specified if -tls-only is given")
-
 //Help provides detailed command help
 func (ab *AddBackend) Help() string {
 	helpText := `
@@ -89,8 +86,8 @@ func (ab *AddBackend) Run(args []string) int {
 		return 1
 	}
 
-	//Check cacert and TLS config
-	if err := ab.validCertAndTLS(caCertPath, tlsOnly); err != nil {
+	//Check cacert
+	if err := ab.validCertPath(caCertPath); err != nil {
 		ab.UI.Error(err.Error())
 		return 1
 	}
@@ -122,17 +119,12 @@ func (ab *AddBackend) Synopsis() string {
 	return "Define a backend as a collection of servers"
 }
 
-func (ab *AddBackend) validCertAndTLS(caCertPath string, tlsOnly bool) error {
-	log.Debug(fmt.Sprintf("validCertAndTLS cert path %s tlsOnly %v", caCertPath, tlsOnly))
+func (ab *AddBackend) validCertPath(caCertPath string) error {
+	log.Debugf("validCertPath %s", caCertPath)
 	if caCertPath != "" {
 		if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
 			return ErrBadPathSpec
 		}
 	}
-
-	if tlsOnly && caCertPath == "" {
-		return ErrMustSupplyCACert
-	}
-
 	return nil
 }
