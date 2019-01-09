@@ -86,6 +86,12 @@ func NewTimingWrapper(args ...interface{}) plugin.Wrapper {
 	return tw
 }
 
+func recovery() {
+	if r := recover(); r != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("recovered: %v", r))
+	}
+}
+
 //Wrap implements the plugin Wrapper interface, and is used
 //to wrap a handler to put a EndToEndTimer instance into the call context
 func (tw TimingWrapper) Wrap(h http.Handler) http.Handler {
@@ -101,6 +107,7 @@ func (tw TimingWrapper) Wrap(h http.Handler) http.Handler {
 		ctxTimer := TimerFromContext(newR.Context())
 		ctxTimer.Stop(nil)
 		go func(t *timer.EndToEndTimer) {
+			defer recovery()
 			logTiming(t)
 		}(ctxTimer)
 	})
@@ -114,6 +121,7 @@ func logTiming(t *timer.EndToEndTimer) {
 	fmt.Fprintln(os.Stderr, t.ToJSONString())
 
 	go func(t *timer.EndToEndTimer) {
+		defer recovery()
 		updateCounters(t)
 	}(t)
 }
