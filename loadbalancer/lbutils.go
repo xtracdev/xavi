@@ -75,7 +75,7 @@ func createCertPool(backendConfig *config.BackendConfig) (*x509.CertPool, error)
 	return pool, nil
 }
 
-// NewLoadBalancer instantiates a load balancer based on the named backend configuration. Backend
+// NewBackendLoadBalancer instantiates a load balancer based on the named backend configuration. Backend
 // names are scoped to routes, thus the route is given to ensure the correct backend is returned
 // if multiple backend definitions with the same name are given.
 func NewBackendLoadBalancer(backendName string) (*BackendLoadBalancer, error) {
