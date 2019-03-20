@@ -68,7 +68,7 @@ func (hcc *HealthCheckContext) HealthHandler() http.HandlerFunc {
 	}
 }
 
-//Return current health status
+//GetHealthStatus returns current health status
 func (hcc *HealthCheckContext) GetHealthStatus() *HealthResponse {
 
 	hr := &HealthResponse{
